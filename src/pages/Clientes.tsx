@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Search, Plus, Phone, Mail, Edit2, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, Phone, Mail, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useClients, Client } from '@/hooks/useClients';
+import { useAppointments } from '@/hooks/useAppointments';
 import { ClientDialog } from '@/components/ClientDialog';
 import {
   AlertDialog,
@@ -17,11 +18,13 @@ import {
 
 export function Clientes() {
   const { clients, loading, createClient, updateClient, deleteClient } = useClients();
+  const { appointments } = useAppointments();
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [hasAppointments, setHasAppointments] = useState(false);
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -42,6 +45,12 @@ export function Clientes() {
   };
 
   const handleDelete = (client: Client) => {
+    const clientAppointments = appointments.filter(
+      apt => apt.clientName.toLowerCase() === client.name.toLowerCase() && 
+             apt.status !== 'completed' && 
+             apt.status !== 'cancelled'
+    );
+    setHasAppointments(clientAppointments.length > 0);
     setClientToDelete(client);
     setDeleteDialogOpen(true);
   };
@@ -185,9 +194,19 @@ export function Clientes() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {hasAppointments && <AlertTriangle className="h-5 w-5 text-amber-500" />}
+              Confirmar exclusão
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o cliente "{clientToDelete?.name}"? Esta ação não pode ser desfeita.
+              {hasAppointments ? (
+                <>
+                  <span className="text-amber-500 font-medium">Atenção:</span> O cliente "{clientToDelete?.name}" possui agendamentos pendentes ou confirmados. 
+                  Excluir este cliente não cancelará os agendamentos existentes.
+                </>
+              ) : (
+                <>Tem certeza que deseja excluir o cliente "{clientToDelete?.name}"? Esta ação não pode ser desfeita.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

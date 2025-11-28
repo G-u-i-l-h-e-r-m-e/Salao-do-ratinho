@@ -1,5 +1,5 @@
 // URL base da API externa (Render)
-const API_BASE_URL = 'https://api-salao-do-ratinho.onrender.com';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://api-salao-do-ratinho.onrender.com';
 
 interface ApiResponse<T> {
   success: boolean;
