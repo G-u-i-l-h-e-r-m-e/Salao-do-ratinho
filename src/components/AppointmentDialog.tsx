@@ -7,12 +7,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Calendar } from '@/components/ui/calendar';
 import { Appointment } from '@/hooks/useAppointments';
 import { useBusinessHours } from '@/hooks/useBusinessHours';
 import { useClients, Client } from '@/hooks/useClients';
 import { useServices } from '@/hooks/useServices';
-import { AlertCircle, Check, ChevronsUpDown, UserPlus } from 'lucide-react';
+import { AlertCircle, Check, ChevronsUpDown, UserPlus, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { format, parse } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -278,14 +281,36 @@ export function AppointmentDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="date">Data *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                required
-              />
+              <Label>Data *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date
+                      ? format(parse(formData.date, 'yyyy-MM-dd', new Date()), "dd 'de' MMM", { locale: ptBR })
+                      : "Selecionar"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date ? parse(formData.date, 'yyyy-MM-dd', new Date()) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        setFormData({ ...formData, date: format(date, 'yyyy-MM-dd') });
+                      }
+                    }}
+                    locale={ptBR}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label htmlFor="time">Horário *</Label>
