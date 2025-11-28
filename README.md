@@ -1,75 +1,184 @@
-# Welcome to your Lovable project
+# Salão do Ratinho 💈
 
-## Project info
+Sistema completo de gestão para barbearias e salões de beleza, desenvolvido com tecnologias modernas para oferecer uma experiência fluida tanto para administradores quanto para clientes.
 
-**URL**: https://lovable.dev/projects/747b75fd-b805-4f4c-be70-aae61472021b
+## 📋 Sobre o Projeto
 
-## How can I edit this code?
+O **Salão do Ratinho** é uma aplicação web full-stack que permite:
 
-There are several ways of editing your application.
+- **Para Administradores (Barbeiros):**
+  - Gerenciar agendamentos
+  - Cadastrar e administrar clientes
+  - Controlar serviços oferecidos
+  - Acompanhar o financeiro (receitas e despesas)
+  - Visualizar dashboard com métricas do negócio
+  - Configurar horários de funcionamento
 
-**Use Lovable**
+- **Para Clientes:**
+  - Realizar login e cadastro
+  - Agendar horários online
+  - Visualizar histórico de agendamentos
+  - Acessar informações do salão
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/747b75fd-b805-4f4c-be70-aae61472021b) and start prompting.
+## 🚀 Tecnologias Utilizadas
 
-Changes made via Lovable will be committed automatically to this repo.
+### Frontend
+- **React 18** - Biblioteca para construção de interfaces
+- **TypeScript** - Superset JavaScript com tipagem estática
+- **Vite** - Build tool e dev server ultrarrápido
+- **Tailwind CSS** - Framework CSS utilitário
+- **shadcn/ui** - Componentes de UI acessíveis e customizáveis
+- **React Router DOM** - Roteamento SPA
+- **React Query** - Gerenciamento de estado servidor
+- **Recharts** - Gráficos e visualizações
+- **Lucide React** - Ícones modernos
+- **date-fns** - Manipulação de datas
 
-**Use your preferred IDE**
+### Backend
+- **Supabase** - Autenticação e banco de dados (via Lovable Cloud)
+- **API REST** - Backend customizado em Node.js/Express
+- **MongoDB** - Banco de dados NoSQL para dados do negócio
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 📁 Estrutura do Projeto
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── ui/             # Componentes base (shadcn/ui)
+│   └── ...             # Componentes específicos do app
+├── hooks/              # Custom hooks React
+├── pages/              # Páginas/rotas da aplicação
+├── lib/                # Utilitários e configurações
+├── integrations/       # Integrações externas (Supabase)
+└── assets/             # Arquivos estáticos
 
-Follow these steps:
+api-externa/            # API REST externa
+├── api/
+│   └── index.js       # Função serverless (Vercel)
+└── ...
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📱 Páginas Principais
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+| Rota | Descrição |
+|------|-----------|
+| `/` | Página inicial |
+| `/auth` | Login/Cadastro do administrador |
+| `/dashboard` | Painel com métricas e resumos |
+| `/agendamentos` | Gestão de agendamentos |
+| `/clientes` | Cadastro e gestão de clientes |
+| `/financeiro` | Controle financeiro |
+| `/configuracoes` | Configurações do sistema |
+| `/cliente/auth` | Login/Cadastro de clientes |
+| `/cliente/portal` | Portal do cliente |
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 🔐 Autenticação
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+O sistema possui dois fluxos de autenticação distintos:
+
+1. **Administrador**: Acesso completo ao sistema de gestão
+2. **Cliente**: Acesso ao portal de agendamentos
+
+A autenticação é gerenciada pelo Supabase Auth com:
+- Login por email/senha
+- Confirmação automática de email
+- Sessões persistentes
+
+## ⚙️ Configuração e Execução
+
+### Pré-requisitos
+- Node.js 18+
+- npm ou bun
+
+### Instalação
+
+```bash
+# Clone o repositório
+git clone <URL_DO_REPOSITORIO>
+
+# Acesse a pasta do projeto
+cd salao-do-ratinho
+
+# Instale as dependências
+npm install
+
+# Execute em modo de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+O app estará disponível em `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Variáveis de Ambiente
 
-**Use GitHub Codespaces**
+O projeto utiliza as seguintes variáveis (configuradas automaticamente pelo Lovable Cloud):
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- `VITE_SUPABASE_URL` - URL do projeto Supabase
+- `VITE_SUPABASE_PUBLISHABLE_KEY` - Chave pública do Supabase
+- `VITE_SUPABASE_PROJECT_ID` - ID do projeto
 
-## What technologies are used for this project?
+Para a API externa:
+- `MONGODB_URI` - String de conexão do MongoDB
 
-This project is built with:
+## 🎨 Design System
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+O projeto utiliza um design system customizado com:
 
-## How can I deploy this project?
+- **Tema escuro** como padrão
+- **Cores douradas** como destaque (marca do salão)
+- **Componentes responsivos** para mobile e desktop
+- **Animações suaves** para melhor UX
 
-Simply open [Lovable](https://lovable.dev/projects/747b75fd-b805-4f4c-be70-aae61472021b) and click on Share -> Publish.
+## 📊 Funcionalidades Detalhadas
 
-## Can I connect a custom domain to my Lovable project?
+### Dashboard
+- Resumo de agendamentos do dia
+- Receita do período
+- Gráfico de faturamento
+- Próximos agendamentos
 
-Yes, you can!
+### Agendamentos
+- Calendário interativo
+- Filtros por status e data
+- Criação/edição/cancelamento
+- Lembretes automáticos
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Clientes
+- Cadastro completo
+- Histórico de visitas
+- Total gasto
+- Busca e filtros
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
-# Salao-do-ratinho
-# Salao-do-ratinho
+### Financeiro
+- Registro de receitas e despesas
+- Resumo por período
+- Gráficos de evolução
+- Exportação de dados
+
+### Portal do Cliente
+- Agendamento online
+- Visualização de horários disponíveis
+- Histórico de serviços
+- Informações do salão
+
+## 🚀 Deploy
+
+### Frontend (Lovable)
+O deploy do frontend é feito automaticamente pelo Lovable através do botão "Publish".
+
+### API Externa (Vercel)
+```bash
+cd api-externa
+vercel deploy --prod
+```
+
+## 📄 Licença
+
+Este projeto foi desenvolvido exclusivamente para o Salão do Ratinho.
+
+## 👥 Contato
+
+Para dúvidas ou suporte, entre em contato através do salão.
+
+---
+
+Desenvolvido com ❤️ usando [Lovable](https://lovable.dev)
