@@ -9,6 +9,8 @@ import { Clientes } from "./pages/Clientes";
 import { Agendamentos } from "./pages/Agendamentos";
 import { Financeiro } from "./pages/Financeiro";
 import { Configuracoes } from "./pages/Configuracoes";
+import { Auth } from "./pages/Auth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,11 +22,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/clientes" element={<Layout><Clientes /></Layout>} />
-          <Route path="/agendamentos" element={<Layout><Agendamentos /></Layout>} />
-          <Route path="/financeiro" element={<Layout><Financeiro /></Layout>} />
-          <Route path="/configuracoes" element={<Layout><Configuracoes /></Layout>} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+          <Route path="/clientes" element={<ProtectedRoute><Layout><Clientes /></Layout></ProtectedRoute>} />
+          <Route path="/agendamentos" element={<ProtectedRoute><Layout><Agendamentos /></Layout></ProtectedRoute>} />
+          <Route path="/financeiro" element={<ProtectedRoute><Layout><Financeiro /></Layout></ProtectedRoute>} />
+          <Route path="/configuracoes" element={<ProtectedRoute><Layout><Configuracoes /></Layout></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
