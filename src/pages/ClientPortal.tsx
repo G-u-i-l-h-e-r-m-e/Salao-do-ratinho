@@ -300,17 +300,9 @@ export function ClientPortal() {
                 {/* Estatísticas */}
                 <div className="pt-4 border-t border-border">
                   <h3 className="text-sm font-medium mb-3">Estatísticas</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-muted/50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-primary">{clientData.visits || 0}</p>
-                      <p className="text-xs text-muted-foreground">Visitas</p>
-                    </div>
-                    <div className="p-4 bg-muted/50 rounded-lg text-center">
-                      <p className="text-2xl font-bold text-primary">
-                        R$ {(clientData.totalSpent || 0).toFixed(2)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Total gasto</p>
-                    </div>
+                  <div className="p-4 bg-muted/50 rounded-lg text-center max-w-xs">
+                    <p className="text-2xl font-bold text-primary">{clientData.visits || 0}</p>
+                    <p className="text-xs text-muted-foreground">Visitas</p>
                   </div>
                 </div>
               </CardContent>
