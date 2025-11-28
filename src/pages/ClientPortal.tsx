@@ -31,6 +31,15 @@ import {
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+// Função para formatar telefone
+const formatPhone = (value: string) => {
+  const numbers = value.replace(/\D/g, '');
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  if (numbers.length <= 11) return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+};
+
 export function ClientPortal() {
   const { role, loading, clientData, user } = useUserRole();
   const { signOut } = useAuth();
@@ -284,8 +293,9 @@ export function ClientPortal() {
                       <Input
                         id="phone"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, phone: formatPhone(e.target.value) })}
                         className="pl-10"
+                        maxLength={16}
                         disabled={!isEditing}
                       />
                     </div>
