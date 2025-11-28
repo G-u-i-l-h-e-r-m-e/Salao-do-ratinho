@@ -90,8 +90,8 @@ export function useAppointments(selectedDate?: string) {
     }
   };
 
-  // Incrementa as visitas do cliente
-  const incrementClientVisits = async (clientName: string) => {
+  // Atualiza visitas e totalSpent do cliente
+  const updateClientStats = async (clientName: string, servicePrice: number) => {
     try {
       // Busca o cliente pelo nome
       const clientsResponse = await api.getClients();
@@ -100,11 +100,12 @@ export function useAppointments(selectedDate?: string) {
         if (client) {
           await api.updateClient(client._id, {
             visits: (client.visits || 0) + 1,
+            totalSpent: (client.totalSpent || 0) + servicePrice,
           });
         }
       }
     } catch (error) {
-      console.error('Error incrementing client visits:', error);
+      console.error('Error updating client stats:', error);
     }
   };
 
@@ -144,7 +145,7 @@ export function useAppointments(selectedDate?: string) {
       const response = await api.updateAppointment(id, appointmentData);
 
       if (response.success) {
-        // Se o agendamento foi marcado como concluído, cria a transação e incrementa visitas
+        // Se o agendamento foi marcado como concluído, cria a transação e atualiza stats do cliente
         if (isBeingCompleted && currentAppointment) {
           const serviceName = appointmentData.service || currentAppointment.service;
           const price = await getServicePrice(serviceName);
@@ -154,6 +155,12 @@ export function useAppointments(selectedDate?: string) {
               ...currentAppointment,
               ...appointmentData,
             } as Appointment, price);
+            
+            // Atualiza visitas e totalSpent do cliente
+            await updateClientStats(
+              appointmentData.clientName || currentAppointment.clientName,
+              price
+            );
           } else {
             toast({
               title: 'Aviso',
@@ -161,9 +168,6 @@ export function useAppointments(selectedDate?: string) {
               variant: 'destructive',
             });
           }
-
-          // Incrementa as visitas do cliente
-          await incrementClientVisits(appointmentData.clientName || currentAppointment.clientName);
         }
 
         toast({
