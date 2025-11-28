@@ -46,6 +46,50 @@ export function useAppointments(selectedDate?: string) {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // Busca o preço do serviço pelo nome
+  const getServicePrice = async (serviceName: string): Promise<number> => {
+    try {
+      const response = await api.getServices();
+      if (response.success && response.data) {
+        const service = response.data.find((s: any) => s.name === serviceName);
+        return service?.price || 0;
+      }
+    } catch (error) {
+      console.error('Error fetching service price:', error);
+    }
+    return 0;
+  };
+
+  // Cria uma transação de receita automaticamente
+  const createRevenueTransaction = async (appointment: Appointment, price: number) => {
+    try {
+      const transactionData = {
+        type: 'income' as const,
+        amount: price,
+        description: `${appointment.service} - ${appointment.clientName}`,
+        paymentMethod: 'dinheiro',
+        clientName: appointment.clientName,
+        date: appointment.date,
+      };
+
+      const response = await api.createTransaction(transactionData);
+      
+      if (response.success) {
+        toast({
+          title: 'Receita registrada',
+          description: `R$ ${price.toFixed(2)} adicionado automaticamente`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating revenue transaction:', error);
+      toast({
+        title: 'Aviso',
+        description: 'Agendamento concluído, mas não foi possível registrar a receita automaticamente',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const createAppointment = async (appointmentData: Omit<Appointment, '_id'>) => {
     try {
       const response = await api.createAppointment(appointmentData);
@@ -73,9 +117,34 @@ export function useAppointments(selectedDate?: string) {
 
   const updateAppointment = async (id: string, appointmentData: Partial<Appointment>) => {
     try {
+      // Busca o agendamento atual para verificar mudança de status
+      const currentAppointment = appointments.find(a => a._id === id);
+      const isBeingCompleted = 
+        appointmentData.status === 'completed' && 
+        currentAppointment?.status !== 'completed';
+
       const response = await api.updateAppointment(id, appointmentData);
 
       if (response.success) {
+        // Se o agendamento foi marcado como concluído, cria a transação
+        if (isBeingCompleted && currentAppointment) {
+          const serviceName = appointmentData.service || currentAppointment.service;
+          const price = await getServicePrice(serviceName);
+          
+          if (price > 0) {
+            await createRevenueTransaction({
+              ...currentAppointment,
+              ...appointmentData,
+            } as Appointment, price);
+          } else {
+            toast({
+              title: 'Aviso',
+              description: 'Serviço não encontrado ou sem preço definido',
+              variant: 'destructive',
+            });
+          }
+        }
+
         toast({
           title: 'Sucesso',
           description: 'Agendamento atualizado com sucesso',
