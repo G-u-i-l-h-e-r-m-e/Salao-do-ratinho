@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 export interface Client {
   _id: string;
@@ -26,6 +27,7 @@ export interface ClientInput {
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const { checkSession } = useSessionGuard();
 
   const fetchClients = useCallback(async () => {
     try {
@@ -50,6 +52,10 @@ export function useClients() {
   }, []);
 
   const createClient = async (clientData: ClientInput) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       const response = await api.createClient(clientData);
 
@@ -75,6 +81,10 @@ export function useClients() {
   };
 
   const updateClient = async (id: string, clientData: Partial<ClientInput>) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       const response = await api.updateClient(id, clientData);
 
@@ -100,6 +110,10 @@ export function useClients() {
   };
 
   const deleteClient = async (id: string) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return false;
+
     try {
       const response = await api.deleteClient(id);
 
