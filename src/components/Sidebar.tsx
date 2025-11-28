@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useSalonInfo } from '@/hooks/useSalonInfo';
 import logo from '@/assets/logo.png';
 
 const navItems = [
@@ -29,6 +30,8 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { getDisplayName } = useSalonInfo();
+  const { firstLine, secondLine } = getDisplayName();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -71,10 +74,10 @@ export function Sidebar() {
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <img src={logo} alt="Salão do Ratinho" className="h-14 w-14 object-contain" />
+            <img src={logo} alt={firstLine} className="h-14 w-14 object-contain" />
             <div>
-              <h1 className="font-serif text-xl font-bold text-foreground">Salão do</h1>
-              <p className="text-sm text-primary font-semibold -mt-1">Ratinho</p>
+              <h1 className="font-serif text-xl font-bold text-foreground">{firstLine}</h1>
+              {secondLine && <p className="text-sm text-primary font-semibold -mt-1">{secondLine}</p>}
             </div>
           </div>
 

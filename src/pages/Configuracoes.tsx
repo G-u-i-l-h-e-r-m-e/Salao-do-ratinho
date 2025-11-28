@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusinessHours, BusinessHours, DayHours } from '@/hooks/useBusinessHours';
+import { useSalonInfo } from '@/hooks/useSalonInfo';
 import { api } from '@/lib/api';
 
 interface SalonInfo {
@@ -37,13 +38,6 @@ interface ConflictingAppointment {
   dayName: string;
 }
 
-const defaultSalonInfo: SalonInfo = {
-  name: 'Salão do Ratinho',
-  owner: '',
-  email: '',
-  phone: '',
-};
-
 const defaultNotifications: NotificationSettings = {
   appointmentReminder: true,
   reminderMinutes: 10,
@@ -55,8 +49,8 @@ export function Configuracoes() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
   
-  // Settings state
-  const [salonInfo, setSalonInfo] = useState<SalonInfo>(defaultSalonInfo);
+  // Settings state - using shared hook for salonInfo
+  const { salonInfo, setSalonInfo, saveSalonInfo } = useSalonInfo();
   const [localBusinessHours, setLocalBusinessHours] = useState<BusinessHours | null>(null);
   const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications);
   const [promotionTitle, setPromotionTitle] = useState('🎉 Promoção Especial!');
@@ -88,11 +82,9 @@ export function Configuracoes() {
 
   // Load settings from localStorage on mount
   useEffect(() => {
-    const savedSalonInfo = localStorage.getItem('salonInfo');
     const savedNotifications = localStorage.getItem('notifications');
     const savedPromotion = localStorage.getItem('promotion');
     
-    if (savedSalonInfo) setSalonInfo(JSON.parse(savedSalonInfo));
     if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
     if (savedPromotion) {
       const promo = JSON.parse(savedPromotion);
@@ -102,10 +94,10 @@ export function Configuracoes() {
     }
     
     // Set email from auth user
-    if (user?.email) {
-      setSalonInfo(prev => ({ ...prev, email: prev.email || user.email || '' }));
+    if (user?.email && !salonInfo.email) {
+      setSalonInfo(prev => ({ ...prev, email: user.email || '' }));
     }
-  }, [user]);
+  }, [user, salonInfo.email, setSalonInfo]);
 
   const getDayName = (dayOfWeek: number): string => {
     const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -192,8 +184,8 @@ export function Configuracoes() {
         return;
       }
       
-      // Salva as configurações
-      localStorage.setItem('salonInfo', JSON.stringify(salonInfo));
+      // Salva as configurações - usando o hook que notifica outros componentes
+      saveSalonInfo(salonInfo);
       localStorage.setItem('notifications', JSON.stringify(notifications));
       localStorage.setItem('appointmentReminderMinutes', notifications.reminderMinutes.toString());
       localStorage.setItem('promotion', JSON.stringify({
