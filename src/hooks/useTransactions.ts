@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 export interface Transaction {
   _id: string;
@@ -26,6 +27,7 @@ export function useTransactions(startDate?: string, endDate?: string) {
   const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { checkSession } = useSessionGuard();
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -69,6 +71,10 @@ export function useTransactions(startDate?: string, endDate?: string) {
   }, [fetchTransactions, fetchSummary]);
 
   const createTransaction = async (transactionData: Omit<Transaction, '_id'>) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       const response = await api.createTransaction(transactionData);
 
@@ -95,6 +101,10 @@ export function useTransactions(startDate?: string, endDate?: string) {
   };
 
   const updateTransaction = async (id: string, transactionData: Partial<Transaction>) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       const response = await api.updateTransaction(id, transactionData);
 
@@ -121,6 +131,10 @@ export function useTransactions(startDate?: string, endDate?: string) {
   };
 
   const deleteTransaction = async (id: string) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return;
+
     try {
       const response = await api.deleteTransaction(id);
 

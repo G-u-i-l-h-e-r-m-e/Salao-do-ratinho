@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { useSessionGuard } from '@/hooks/useSessionGuard';
 
 export interface Appointment {
   _id: string;
@@ -19,6 +20,7 @@ export function useAppointments(selectedDate?: string) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { checkSession } = useSessionGuard();
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -110,6 +112,10 @@ export function useAppointments(selectedDate?: string) {
   };
 
   const createAppointment = async (appointmentData: Omit<Appointment, '_id'>) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       const response = await api.createAppointment(appointmentData);
 
@@ -135,6 +141,10 @@ export function useAppointments(selectedDate?: string) {
   };
 
   const updateAppointment = async (id: string, appointmentData: Partial<Appointment>) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return null;
+
     try {
       // Busca o agendamento atual para verificar mudança de status
       const currentAppointment = appointments.find(a => a._id === id);
@@ -191,6 +201,10 @@ export function useAppointments(selectedDate?: string) {
   };
 
   const deleteAppointment = async (id: string) => {
+    // Verifica sessão antes de operação crítica
+    const isValid = await checkSession();
+    if (!isValid) return;
+
     try {
       const response = await api.deleteAppointment(id);
 
