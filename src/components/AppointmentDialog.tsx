@@ -10,6 +10,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Appointment } from '@/hooks/useAppointments';
 import { useBusinessHours } from '@/hooks/useBusinessHours';
 import { useClients, Client } from '@/hooks/useClients';
+import { useServices } from '@/hooks/useServices';
 import { AlertCircle, Check, ChevronsUpDown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,17 +22,6 @@ interface AppointmentDialogProps {
   selectedTime?: string;
   onSave: (data: Omit<Appointment, '_id'>) => Promise<void>;
 }
-
-const services = [
-  'Corte',
-  'Corte + Barba',
-  'Corte Degradê',
-  'Corte Social',
-  'Barba',
-  'Hidratação',
-  'Corte + Hidratação',
-  'Pigmentação',
-];
 
 export function AppointmentDialog({ 
   open, 
@@ -65,6 +55,7 @@ export function AppointmentDialog({
   const [clientSearch, setClientSearch] = useState('');
 
   const { clients } = useClients();
+  const { activeServices } = useServices();
   const { getTimeSlotsForDate, isClosedOnDate, getDayName } = useBusinessHours();
 
   // Filtra clientes baseado na busca
@@ -259,9 +250,9 @@ export function AppointmentDialog({
                 <SelectValue placeholder="Selecione um serviço" />
               </SelectTrigger>
               <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service} value={service}>
-                    {service}
+                {activeServices.map((service) => (
+                  <SelectItem key={service._id} value={service.name}>
+                    {service.name} - R$ {service.price.toFixed(2)}
                   </SelectItem>
                 ))}
               </SelectContent>
