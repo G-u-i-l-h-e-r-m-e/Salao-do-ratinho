@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Plus, Trash2, Edit } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Plus, Trash2, Edit, FileText } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { RevenueChart } from '@/components/RevenueChart';
 import { Button } from '@/components/ui/button';
 import { useTransactions, Transaction } from '@/hooks/useTransactions';
 import { TransactionDialog } from '@/components/TransactionDialog';
+import { ReportDialog } from '@/components/ReportDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, parseISO } from 'date-fns';
@@ -12,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 
 export function Financeiro() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
@@ -82,10 +84,16 @@ export function Financeiro() {
           <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground mt-2">Acompanhe suas receitas e despesas</p>
         </div>
-        <Button variant="gold" size="lg" onClick={handleNewTransaction}>
-          <Plus className="h-5 w-5" />
-          Nova Transação
-        </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setReportDialogOpen(true)}>
+            <FileText className="h-5 w-5" />
+            Relatório
+          </Button>
+          <Button variant="gold" size="lg" onClick={handleNewTransaction}>
+            <Plus className="h-5 w-5" />
+            Nova Transação
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -215,6 +223,11 @@ export function Financeiro() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+      />
     </div>
   );
 }
