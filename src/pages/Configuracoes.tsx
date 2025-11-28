@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle, Megaphone, Smile } from 'lucide-react';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/PaginationControls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -75,6 +77,9 @@ export function Configuracoes() {
   const { toast } = useToast();
   const { user } = useAuth();
   const { businessHours, saveBusinessHours } = useBusinessHours();
+  
+  // Pagination for services
+  const servicesPagination = usePagination(services, { itemsPerPage: 6 });
 
   // Initialize local business hours from hook
   useEffect(() => {
@@ -362,49 +367,60 @@ export function Configuracoes() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {services.map((service) => (
-              <div
-                key={service._id}
-                className={cn(
-                  "flex items-center justify-between p-4 rounded-lg border transition-all",
-                  service.active 
-                    ? "bg-secondary/50 border-border" 
-                    : "bg-muted/30 border-muted opacity-60"
-                )}
-              >
-                <div className="flex items-center gap-4">
-                  <div>
-                    <p className="font-medium text-foreground">{service.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {service.duration} min • {service.active ? 'Ativo' : 'Inativo'}
-                    </p>
+          <>
+            <div className="space-y-3">
+              {servicesPagination.paginatedItems.map((service) => (
+                <div
+                  key={service._id}
+                  className={cn(
+                    "flex items-center justify-between p-4 rounded-lg border transition-all",
+                    service.active 
+                      ? "bg-secondary/50 border-border" 
+                      : "bg-muted/30 border-muted opacity-60"
+                  )}
+                >
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="font-medium text-foreground">{service.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {service.duration} min • {service.active ? 'Ativo' : 'Inativo'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="font-bold text-gold">{formatCurrency(service.price)}</span>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditService(service)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(service._id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className="font-bold text-gold">{formatCurrency(service.price)}</span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEditService(service)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClick(service._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {servicesPagination.showPagination && (
+              <PaginationControls
+                currentPage={servicesPagination.currentPage}
+                totalPages={servicesPagination.totalPages}
+                onPageChange={servicesPagination.goToPage}
+                hasNextPage={servicesPagination.hasNextPage}
+                hasPreviousPage={servicesPagination.hasPreviousPage}
+              />
+            )}
+          </>
         )}
       </div>
 
