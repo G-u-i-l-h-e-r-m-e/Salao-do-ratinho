@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
+import { TermsDialog } from '@/components/TermsDialog';
+import { PrivacyPolicyDialog } from '@/components/PrivacyPolicyDialog';
 
 const authSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -21,6 +23,15 @@ export function Auth() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
+  const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(() => {
+    return localStorage.getItem('termsAccepted') === 'true';
+  });
+  const [privacyAccepted, setPrivacyAccepted] = useState(() => {
+    return localStorage.getItem('privacyAccepted') === 'true';
+  });
+  const [pendingLogin, setPendingLogin] = useState(false);
   
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -28,9 +39,88 @@ export function Auth() {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate('/');
+      if (!privacyAccepted) {
+        setShowPrivacyDialog(true);
+      } else {
+        navigate('/');
+      }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, privacyAccepted]);
+
+  const handleTermsAccept = () => {
+    localStorage.setItem('termsAccepted', 'true');
+    setTermsAccepted(true);
+    setShowTermsDialog(false);
+    // Trigger form submission after accepting terms
+    setPendingLogin(true);
+  };
+
+  const handlePrivacyAccept = () => {
+    localStorage.setItem('privacyAccepted', 'true');
+    setPrivacyAccepted(true);
+    setShowPrivacyDialog(false);
+    navigate('/');
+  };
+
+  // Effect to handle pending login after terms acceptance
+  useEffect(() => {
+    if (pendingLogin && termsAccepted) {
+      setPendingLogin(false);
+      const submitForm = async () => {
+        setIsSubmitting(true);
+        try {
+          if (isLogin) {
+            const { error } = await signIn(email, password);
+            if (error) {
+              if (error.message.includes('Invalid login credentials')) {
+                toast({
+                  title: 'Erro no login',
+                  description: 'Email ou senha incorretos.',
+                  variant: 'destructive',
+                });
+              } else {
+                toast({
+                  title: 'Erro no login',
+                  description: error.message,
+                  variant: 'destructive',
+                });
+              }
+            } else {
+              toast({
+                title: 'Bem-vindo!',
+                description: 'Login realizado com sucesso.',
+              });
+            }
+          } else {
+            const { error } = await signUp(email, password);
+            if (error) {
+              if (error.message.includes('User already registered')) {
+                toast({
+                  title: 'Usuário já existe',
+                  description: 'Este email já está cadastrado. Faça login.',
+                  variant: 'destructive',
+                });
+              } else {
+                toast({
+                  title: 'Erro no cadastro',
+                  description: error.message,
+                  variant: 'destructive',
+                });
+              }
+            } else {
+              toast({
+                title: 'Conta criada!',
+                description: 'Cadastro realizado com sucesso.',
+              });
+            }
+          }
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+      submitForm();
+    }
+  }, [pendingLogin, termsAccepted, isLogin, email, password, signIn, signUp, toast]);
 
   const validateForm = () => {
     try {
@@ -54,6 +144,12 @@ export function Auth() {
     e.preventDefault();
     
     if (!validateForm()) return;
+
+    // Check if terms are accepted before proceeding
+    if (!termsAccepted) {
+      setShowTermsDialog(true);
+      return;
+    }
     
     setIsSubmitting(true);
 
@@ -213,6 +309,12 @@ export function Auth() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Terms Dialog */}
+      <TermsDialog open={showTermsDialog} onAccept={handleTermsAccept} />
+
+      {/* Privacy Policy Dialog */}
+      <PrivacyPolicyDialog open={showPrivacyDialog} onAccept={handlePrivacyAccept} />
     </div>
   );
 }
