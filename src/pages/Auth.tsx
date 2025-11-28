@@ -11,6 +11,16 @@ import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { TermsDialog } from '@/components/TermsDialog';
 import { PrivacyPolicyDialog } from '@/components/PrivacyPolicyDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const authSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -23,15 +33,9 @@ export function Auth() {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showTermsDialog, setShowTermsDialog] = useState(false);
   const [showPrivacyDialog, setShowPrivacyDialog] = useState(false);
-  const [termsAccepted, setTermsAccepted] = useState(() => {
-    return localStorage.getItem('termsAccepted') === 'true';
-  });
-  const [privacyAccepted, setPrivacyAccepted] = useState(() => {
-    return localStorage.getItem('privacyAccepted') === 'true';
-  });
-  const [pendingLogin, setPendingLogin] = useState(false);
   
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
@@ -39,88 +43,9 @@ export function Auth() {
 
   useEffect(() => {
     if (user && !loading) {
-      if (!privacyAccepted) {
-        setShowPrivacyDialog(true);
-      } else {
-        navigate('/');
-      }
+      navigate('/');
     }
-  }, [user, loading, navigate, privacyAccepted]);
-
-  const handleTermsAccept = () => {
-    localStorage.setItem('termsAccepted', 'true');
-    setTermsAccepted(true);
-    setShowTermsDialog(false);
-    // Trigger form submission after accepting terms
-    setPendingLogin(true);
-  };
-
-  const handlePrivacyAccept = () => {
-    localStorage.setItem('privacyAccepted', 'true');
-    setPrivacyAccepted(true);
-    setShowPrivacyDialog(false);
-    navigate('/');
-  };
-
-  // Effect to handle pending login after terms acceptance
-  useEffect(() => {
-    if (pendingLogin && termsAccepted) {
-      setPendingLogin(false);
-      const submitForm = async () => {
-        setIsSubmitting(true);
-        try {
-          if (isLogin) {
-            const { error } = await signIn(email, password);
-            if (error) {
-              if (error.message.includes('Invalid login credentials')) {
-                toast({
-                  title: 'Erro no login',
-                  description: 'Email ou senha incorretos.',
-                  variant: 'destructive',
-                });
-              } else {
-                toast({
-                  title: 'Erro no login',
-                  description: error.message,
-                  variant: 'destructive',
-                });
-              }
-            } else {
-              toast({
-                title: 'Bem-vindo!',
-                description: 'Login realizado com sucesso.',
-              });
-            }
-          } else {
-            const { error } = await signUp(email, password);
-            if (error) {
-              if (error.message.includes('User already registered')) {
-                toast({
-                  title: 'Usuário já existe',
-                  description: 'Este email já está cadastrado. Faça login.',
-                  variant: 'destructive',
-                });
-              } else {
-                toast({
-                  title: 'Erro no cadastro',
-                  description: error.message,
-                  variant: 'destructive',
-                });
-              }
-            } else {
-              toast({
-                title: 'Conta criada!',
-                description: 'Cadastro realizado com sucesso.',
-              });
-            }
-          }
-        } finally {
-          setIsSubmitting(false);
-        }
-      };
-      submitForm();
-    }
-  }, [pendingLogin, termsAccepted, isLogin, email, password, signIn, signUp, toast]);
+  }, [user, loading, navigate]);
 
   const validateForm = () => {
     try {
@@ -140,17 +65,14 @@ export function Auth() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
+    setShowConfirmDialog(true);
+  };
 
-    // Check if terms are accepted before proceeding
-    if (!termsAccepted) {
-      setShowTermsDialog(true);
-      return;
-    }
-    
+  const handleConfirmSubmit = async () => {
+    setShowConfirmDialog(false);
     setIsSubmitting(true);
 
     try {
@@ -310,11 +232,45 @@ export function Auth() {
         </CardContent>
       </Card>
 
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termos e Políticas</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Ao continuar, você concorda com nossos:</p>
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setShowTermsDialog(true)}
+                  className="text-primary hover:underline text-left"
+                >
+                  • Termos de Uso
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPrivacyDialog(true)}
+                  className="text-primary hover:underline text-left"
+                >
+                  • Política de Privacidade
+                </button>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmit}>
+              Concordo e Continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Terms Dialog */}
-      <TermsDialog open={showTermsDialog} onAccept={handleTermsAccept} />
+      <TermsDialog open={showTermsDialog} onAccept={() => setShowTermsDialog(false)} />
 
       {/* Privacy Policy Dialog */}
-      <PrivacyPolicyDialog open={showPrivacyDialog} onAccept={handlePrivacyAccept} />
+      <PrivacyPolicyDialog open={showPrivacyDialog} onAccept={() => setShowPrivacyDialog(false)} />
     </div>
   );
 }
