@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useBusinessHours, BusinessHours, DayHours } from '@/hooks/useBusinessHours';
+import { api } from '@/lib/api';
 
 interface SalonInfo {
   name: string;
@@ -19,16 +21,17 @@ interface SalonInfo {
   phone: string;
 }
 
-interface BusinessHours {
-  weekdays: { open: string; close: string; closed: boolean };
-  saturday: { open: string; close: string; closed: boolean };
-  sunday: { open: string; close: string; closed: boolean };
-}
-
 interface NotificationSettings {
   newAppointments: boolean;
   appointmentReminder: boolean;
   dailyReport: boolean;
+}
+
+interface ConflictingAppointment {
+  clientName: string;
+  date: string;
+  time: string;
+  dayName: string;
 }
 
 const defaultSalonInfo: SalonInfo = {
@@ -36,12 +39,6 @@ const defaultSalonInfo: SalonInfo = {
   owner: '',
   email: '',
   phone: '',
-};
-
-const defaultBusinessHours: BusinessHours = {
-  weekdays: { open: '08:00', close: '18:00', closed: false },
-  saturday: { open: '08:00', close: '14:00', closed: false },
-  sunday: { open: '', close: '', closed: true },
 };
 
 const defaultNotifications: NotificationSettings = {
@@ -58,28 +55,35 @@ export function Configuracoes() {
   
   // Settings state
   const [salonInfo, setSalonInfo] = useState<SalonInfo>(defaultSalonInfo);
-  const [businessHours, setBusinessHours] = useState<BusinessHours>(defaultBusinessHours);
+  const [localBusinessHours, setLocalBusinessHours] = useState<BusinessHours | null>(null);
   const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications);
   
   // Password change state
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  
+  // Conflict state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictingAppointments, setConflictingAppointments] = useState<ConflictingAppointment[]>([]);
 
   const { services, loading, createService, updateService, deleteService } = useServices();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { businessHours, saveBusinessHours } = useBusinessHours();
+
+  // Initialize local business hours from hook
+  useEffect(() => {
+    setLocalBusinessHours(businessHours);
+  }, [businessHours]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
     const savedSalonInfo = localStorage.getItem('salonInfo');
-    const savedBusinessHours = localStorage.getItem('businessHours');
     const savedNotifications = localStorage.getItem('notifications');
     
     if (savedSalonInfo) setSalonInfo(JSON.parse(savedSalonInfo));
-    if (savedBusinessHours) setBusinessHours(JSON.parse(savedBusinessHours));
     if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
     
     // Set email from auth user
@@ -88,12 +92,95 @@ export function Configuracoes() {
     }
   }, [user]);
 
+  const getDayName = (dayOfWeek: number): string => {
+    const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    return days[dayOfWeek];
+  };
+
+  const isTimeWithinHours = (time: string, dayHours: DayHours): boolean => {
+    if (dayHours.closed) return false;
+    if (!dayHours.open || !dayHours.close) return false;
+
+    const [timeHour, timeMin] = time.split(':').map(Number);
+    const [openHour, openMin] = dayHours.open.split(':').map(Number);
+    const [closeHour, closeMin] = dayHours.close.split(':').map(Number);
+
+    const timeInMinutes = timeHour * 60 + timeMin;
+    const openInMinutes = openHour * 60 + openMin;
+    const closeInMinutes = closeHour * 60 + closeMin;
+
+    return timeInMinutes >= openInMinutes && timeInMinutes < closeInMinutes;
+  };
+
+  const checkForConflicts = useCallback(async (newHours: BusinessHours): Promise<ConflictingAppointment[]> => {
+    try {
+      // Busca agendamentos dos próximos 30 dias
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setDate(today.getDate() + 30);
+      
+      const startStr = today.toISOString().split('T')[0];
+      const endStr = endDate.toISOString().split('T')[0];
+      
+      const response = await api.getAppointments();
+      
+      if (!response.success || !response.data) return [];
+      
+      const conflicts: ConflictingAppointment[] = [];
+      
+      response.data.forEach((apt: any) => {
+        // Ignora agendamentos cancelados ou concluídos
+        if (apt.status === 'cancelled' || apt.status === 'completed') return;
+        
+        const aptDate = new Date(apt.date + 'T12:00:00');
+        const dayOfWeek = aptDate.getDay();
+        
+        let dayHours: DayHours;
+        if (dayOfWeek === 0) {
+          dayHours = newHours.sunday;
+        } else if (dayOfWeek === 6) {
+          dayHours = newHours.saturday;
+        } else {
+          dayHours = newHours.weekdays;
+        }
+        
+        // Verifica se o horário está fora do novo horário de funcionamento
+        if (!isTimeWithinHours(apt.time, dayHours)) {
+          conflicts.push({
+            clientName: apt.clientName,
+            date: apt.date,
+            time: apt.time,
+            dayName: getDayName(dayOfWeek),
+          });
+        }
+      });
+      
+      return conflicts;
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
+      return [];
+    }
+  }, []);
+
   const handleSaveSettings = async () => {
+    if (!localBusinessHours) return;
+    
     setSavingSettings(true);
     try {
+      // Verifica conflitos com agendamentos
+      const conflicts = await checkForConflicts(localBusinessHours);
+      
+      if (conflicts.length > 0) {
+        setConflictingAppointments(conflicts);
+        setConflictDialogOpen(true);
+        setSavingSettings(false);
+        return;
+      }
+      
+      // Salva as configurações
       localStorage.setItem('salonInfo', JSON.stringify(salonInfo));
-      localStorage.setItem('businessHours', JSON.stringify(businessHours));
       localStorage.setItem('notifications', JSON.stringify(notifications));
+      saveBusinessHours(localBusinessHours);
       
       toast({
         title: 'Sucesso',
@@ -151,7 +238,6 @@ export function Configuracoes() {
         description: 'Senha alterada com sucesso!',
       });
       
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
@@ -203,16 +289,25 @@ export function Configuracoes() {
     }).format(value);
   };
 
-  const updateBusinessHours = (
+  const updateLocalBusinessHours = (
     day: 'weekdays' | 'saturday' | 'sunday',
     field: 'open' | 'close' | 'closed',
     value: string | boolean
   ) => {
-    setBusinessHours(prev => ({
+    if (!localBusinessHours) return;
+    setLocalBusinessHours(prev => prev ? ({
       ...prev,
       [day]: { ...prev[day], [field]: value },
-    }));
+    }) : null);
   };
+
+  if (!localBusinessHours) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -356,86 +451,86 @@ export function Configuracoes() {
         
         <div className="space-y-4">
           {/* Segunda a Sexta */}
-          <div className="flex items-center justify-between py-3 border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border gap-4">
             <div className="flex items-center gap-3">
               <Switch 
-                checked={!businessHours.weekdays.closed}
-                onCheckedChange={(checked) => updateBusinessHours('weekdays', 'closed', !checked)}
+                checked={!localBusinessHours.weekdays.closed}
+                onCheckedChange={(checked) => updateLocalBusinessHours('weekdays', 'closed', !checked)}
               />
               <span className="font-medium text-foreground">Segunda a Sexta</span>
             </div>
             <div className="flex items-center gap-4">
               <Input 
                 type="time"
-                value={businessHours.weekdays.open}
-                onChange={(e) => updateBusinessHours('weekdays', 'open', e.target.value)}
+                value={localBusinessHours.weekdays.open}
+                onChange={(e) => updateLocalBusinessHours('weekdays', 'open', e.target.value)}
                 className="w-28 bg-secondary border-border text-center"
-                disabled={businessHours.weekdays.closed}
+                disabled={localBusinessHours.weekdays.closed}
               />
               <span className="text-muted-foreground">até</span>
               <Input 
                 type="time"
-                value={businessHours.weekdays.close}
-                onChange={(e) => updateBusinessHours('weekdays', 'close', e.target.value)}
+                value={localBusinessHours.weekdays.close}
+                onChange={(e) => updateLocalBusinessHours('weekdays', 'close', e.target.value)}
                 className="w-28 bg-secondary border-border text-center"
-                disabled={businessHours.weekdays.closed}
+                disabled={localBusinessHours.weekdays.closed}
               />
             </div>
           </div>
 
           {/* Sábado */}
-          <div className="flex items-center justify-between py-3 border-b border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 border-b border-border gap-4">
             <div className="flex items-center gap-3">
               <Switch 
-                checked={!businessHours.saturday.closed}
-                onCheckedChange={(checked) => updateBusinessHours('saturday', 'closed', !checked)}
+                checked={!localBusinessHours.saturday.closed}
+                onCheckedChange={(checked) => updateLocalBusinessHours('saturday', 'closed', !checked)}
               />
               <span className="font-medium text-foreground">Sábado</span>
             </div>
             <div className="flex items-center gap-4">
               <Input 
                 type="time"
-                value={businessHours.saturday.open}
-                onChange={(e) => updateBusinessHours('saturday', 'open', e.target.value)}
+                value={localBusinessHours.saturday.open}
+                onChange={(e) => updateLocalBusinessHours('saturday', 'open', e.target.value)}
                 className="w-28 bg-secondary border-border text-center"
-                disabled={businessHours.saturday.closed}
+                disabled={localBusinessHours.saturday.closed}
               />
               <span className="text-muted-foreground">até</span>
               <Input 
                 type="time"
-                value={businessHours.saturday.close}
-                onChange={(e) => updateBusinessHours('saturday', 'close', e.target.value)}
+                value={localBusinessHours.saturday.close}
+                onChange={(e) => updateLocalBusinessHours('saturday', 'close', e.target.value)}
                 className="w-28 bg-secondary border-border text-center"
-                disabled={businessHours.saturday.closed}
+                disabled={localBusinessHours.saturday.closed}
               />
             </div>
           </div>
 
           {/* Domingo */}
-          <div className="flex items-center justify-between py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-4">
             <div className="flex items-center gap-3">
               <Switch 
-                checked={!businessHours.sunday.closed}
-                onCheckedChange={(checked) => updateBusinessHours('sunday', 'closed', !checked)}
+                checked={!localBusinessHours.sunday.closed}
+                onCheckedChange={(checked) => updateLocalBusinessHours('sunday', 'closed', !checked)}
               />
               <span className="font-medium text-foreground">Domingo</span>
             </div>
             <div className="flex items-center gap-4">
-              {businessHours.sunday.closed ? (
+              {localBusinessHours.sunday.closed ? (
                 <span className="text-muted-foreground italic">Fechado</span>
               ) : (
                 <>
                   <Input 
                     type="time"
-                    value={businessHours.sunday.open}
-                    onChange={(e) => updateBusinessHours('sunday', 'open', e.target.value)}
+                    value={localBusinessHours.sunday.open}
+                    onChange={(e) => updateLocalBusinessHours('sunday', 'open', e.target.value)}
                     className="w-28 bg-secondary border-border text-center"
                   />
                   <span className="text-muted-foreground">até</span>
                   <Input 
                     type="time"
-                    value={businessHours.sunday.close}
-                    onChange={(e) => updateBusinessHours('sunday', 'close', e.target.value)}
+                    value={localBusinessHours.sunday.close}
+                    onChange={(e) => updateLocalBusinessHours('sunday', 'close', e.target.value)}
                     className="w-28 bg-secondary border-border text-center"
                   />
                 </>
@@ -583,6 +678,42 @@ export function Configuracoes() {
             <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Excluir
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Conflict Dialog */}
+      <AlertDialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Conflito com Agendamentos
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Não é possível alterar o horário de funcionamento pois existem {conflictingAppointments.length} agendamento(s) 
+                  que ficariam fora do novo horário:
+                </p>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {conflictingAppointments.map((apt, index) => (
+                    <div key={index} className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                      <p className="font-medium text-foreground">{apt.clientName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {apt.dayName}, {new Date(apt.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {apt.time}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Cancele ou remarque esses agendamentos antes de alterar o horário de funcionamento.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Entendi</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
