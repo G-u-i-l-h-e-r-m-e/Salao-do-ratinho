@@ -1,11 +1,15 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
+import { useAppointmentReminder } from '@/hooks/useAppointmentReminder';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  // Ativa lembretes de agendamento
+  useAppointmentReminder();
+
   return (
     <div className="min-h-screen bg-background">
       <Sidebar />
