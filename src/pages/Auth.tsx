@@ -126,7 +126,7 @@ export function Auth() {
 
       <Card className="w-full max-w-md glass-card animate-scale-in relative z-10">
         <CardHeader className="text-center space-y-4">
-          <img src={logo} alt="Salão do Ratinho" className="mx-auto h-20 w-20 object-contain" />
+          <img src={logo} alt="Salão do Ratinho" className="mx-auto h-32 w-32 object-contain" />
           <div>
             <CardTitle className="text-2xl">
               <span className="text-foreground">Salão do </span>
