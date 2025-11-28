@@ -1,0 +1,100 @@
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Calendar, 
+  DollarSign, 
+  Settings, 
+  Scissors,
+  Menu,
+  X
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+
+const navItems = [
+  { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+  { icon: Users, label: 'Clientes', path: '/clientes' },
+  { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
+  { icon: DollarSign, label: 'Financeiro', path: '/financeiro' },
+  { icon: Settings, label: 'Configurações', path: '/configuracoes' },
+];
+
+export function Sidebar() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <>
+      {/* Mobile Toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="fixed top-4 left-4 z-50 lg:hidden"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </Button>
+
+      {/* Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={cn(
+        "fixed top-0 left-0 z-40 h-screen w-64 bg-sidebar border-r border-sidebar-border transition-transform duration-300 lg:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="flex flex-col h-full p-6">
+          {/* Logo */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="p-2 rounded-xl gold-gradient glow-gold">
+              <Scissors className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="font-serif text-xl font-bold text-foreground">Salão do</h1>
+              <p className="text-sm gold-text font-semibold -mt-1">Ratinho</p>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-2">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                  isActive 
+                    ? "bg-sidebar-accent text-gold border-l-2 border-gold" 
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="font-medium">{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* Footer */}
+          <div className="pt-6 border-t border-sidebar-border">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
+                <span className="text-primary-foreground font-bold">GA</span>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Guilherme</p>
+                <p className="text-xs text-muted-foreground">Administrador</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </>
+  );
+}
