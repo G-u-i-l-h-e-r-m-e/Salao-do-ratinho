@@ -8,10 +8,13 @@ import {
   Settings, 
   Scissors,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -23,6 +26,19 @@ const navItems = [
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast({
+        title: 'Erro ao sair',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <>
@@ -82,16 +98,29 @@ export function Sidebar() {
           </nav>
 
           {/* Footer */}
-          <div className="pt-6 border-t border-sidebar-border">
+          <div className="pt-6 border-t border-sidebar-border space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center">
-                <span className="text-primary-foreground font-bold">GA</span>
+                <span className="text-primary-foreground font-bold">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Guilherme</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {user?.email || 'Usuário'}
+                </p>
                 <p className="text-xs text-muted-foreground">Administrador</p>
               </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start text-muted-foreground hover:text-destructive"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
           </div>
         </div>
       </aside>
