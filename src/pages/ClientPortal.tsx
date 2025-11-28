@@ -180,21 +180,26 @@ export function ClientPortal() {
       {/* Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Banner de Promoções */}
-        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-primary/10 rounded-full">
-                <Megaphone className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">🎉 Promoção Especial!</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Traga um amigo e ganhe 10% de desconto no próximo corte. Aproveite!
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {(() => {
+          const savedPromotion = localStorage.getItem('promotion');
+          const promo = savedPromotion ? JSON.parse(savedPromotion) : { active: true, title: '🎉 Promoção Especial!', text: 'Traga um amigo e ganhe 10% de desconto no próximo corte. Aproveite!' };
+          if (!promo.active) return null;
+          return (
+            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+              <CardContent className="py-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <Megaphone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{promo.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{promo.text}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle, Megaphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useServices, Service } from '@/hooks/useServices';
 import { ServiceDialog } from '@/components/ServiceDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -55,6 +56,9 @@ export function Configuracoes() {
   const [salonInfo, setSalonInfo] = useState<SalonInfo>(defaultSalonInfo);
   const [localBusinessHours, setLocalBusinessHours] = useState<BusinessHours | null>(null);
   const [notifications, setNotifications] = useState<NotificationSettings>(defaultNotifications);
+  const [promotionTitle, setPromotionTitle] = useState('🎉 Promoção Especial!');
+  const [promotionText, setPromotionText] = useState('Traga um amigo e ganhe 10% de desconto no próximo corte. Aproveite!');
+  const [promotionActive, setPromotionActive] = useState(true);
   
   // Password change state
   const [newPassword, setNewPassword] = useState('');
@@ -80,9 +84,16 @@ export function Configuracoes() {
   useEffect(() => {
     const savedSalonInfo = localStorage.getItem('salonInfo');
     const savedNotifications = localStorage.getItem('notifications');
+    const savedPromotion = localStorage.getItem('promotion');
     
     if (savedSalonInfo) setSalonInfo(JSON.parse(savedSalonInfo));
     if (savedNotifications) setNotifications(JSON.parse(savedNotifications));
+    if (savedPromotion) {
+      const promo = JSON.parse(savedPromotion);
+      setPromotionTitle(promo.title || '🎉 Promoção Especial!');
+      setPromotionText(promo.text || '');
+      setPromotionActive(promo.active !== false);
+    }
     
     // Set email from auth user
     if (user?.email) {
@@ -179,6 +190,11 @@ export function Configuracoes() {
       localStorage.setItem('salonInfo', JSON.stringify(salonInfo));
       localStorage.setItem('notifications', JSON.stringify(notifications));
       localStorage.setItem('appointmentReminderMinutes', notifications.reminderMinutes.toString());
+      localStorage.setItem('promotion', JSON.stringify({
+        title: promotionTitle,
+        text: promotionText,
+        active: promotionActive
+      }));
       saveBusinessHours(localBusinessHours);
       
       toast({
@@ -436,6 +452,51 @@ export function Configuracoes() {
               className="mt-1.5 bg-secondary border-border" 
             />
           </div>
+        </div>
+      </div>
+
+      {/* Promotions Section */}
+      <div className="glass-card rounded-xl p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gold/10">
+              <Megaphone className="h-5 w-5 text-gold" />
+            </div>
+            <h2 className="font-serif text-xl font-bold text-foreground">Promoções</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Ativo</span>
+            <Switch 
+              checked={promotionActive}
+              onCheckedChange={setPromotionActive}
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm text-muted-foreground">Título da Promoção</label>
+            <Input 
+              value={promotionTitle}
+              onChange={(e) => setPromotionTitle(e.target.value)}
+              placeholder="🎉 Promoção Especial!"
+              className="mt-1.5 bg-secondary border-border"
+              disabled={!promotionActive}
+            />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground">Mensagem</label>
+            <Textarea 
+              value={promotionText}
+              onChange={(e) => setPromotionText(e.target.value)}
+              placeholder="Descreva sua promoção aqui..."
+              className="mt-1.5 bg-secondary border-border min-h-[80px]"
+              disabled={!promotionActive}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Esta mensagem será exibida para os clientes na área do cliente.
+          </p>
         </div>
       </div>
 
