@@ -1,17 +1,12 @@
-import { useState } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Clock, Trash2, Edit } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, ChevronLeft, ChevronRight, Clock, Trash2, Edit, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAppointments, Appointment } from '@/hooks/useAppointments';
+import { useBusinessHours } from '@/hooks/useBusinessHours';
 import { AppointmentDialog } from '@/components/AppointmentDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const timeSlots = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30', 
-  '11:00', '11:30', '12:00', '14:00', '14:30', '15:00', 
-  '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
-];
 
 const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
@@ -25,6 +20,16 @@ export function Agendamentos() {
 
   const dateString = selectedDate.toISOString().split('T')[0];
   const { appointments, loading, createAppointment, updateAppointment, deleteAppointment } = useAppointments(dateString);
+  const { getTimeSlotsForDate, isClosedOnDate, getDayName, businessHours } = useBusinessHours();
+
+  // Gera os slots de horário baseado no horário de funcionamento
+  const timeSlots = useMemo(() => {
+    return getTimeSlotsForDate(selectedDate);
+  }, [selectedDate, getTimeSlotsForDate, businessHours]);
+
+  const isClosed = useMemo(() => {
+    return isClosedOnDate(selectedDate);
+  }, [selectedDate, isClosedOnDate, businessHours]);
 
   const getAppointmentByTime = (time: string) => {
     return appointments.find(apt => apt.time === time);
@@ -113,7 +118,12 @@ export function Agendamentos() {
           <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground">Agendamentos</h1>
           <p className="text-muted-foreground mt-2">Gerencie sua agenda diária</p>
         </div>
-        <Button variant="gold" size="lg" onClick={() => handleNewAppointment()}>
+        <Button 
+          variant="gold" 
+          size="lg" 
+          onClick={() => handleNewAppointment()}
+          disabled={isClosed}
+        >
           <Plus className="h-5 w-5" />
           Novo Agendamento
         </Button>
@@ -142,26 +152,33 @@ export function Agendamentos() {
         </div>
         
         <div className="grid grid-cols-7 gap-2">
-          {getDaysInWeek().map((day, index) => (
-            <button
-              key={index}
-              onClick={() => setSelectedDate(day)}
-              className={cn(
-                "flex flex-col items-center p-2 rounded-lg transition-all duration-200",
-                isSelected(day) && "bg-gold text-primary-foreground",
-                isToday(day) && !isSelected(day) && "border-2 border-gold",
-                !isSelected(day) && !isToday(day) && "hover:bg-secondary"
-              )}
-            >
-              <span className="text-xs text-muted-foreground">{weekDays[index]}</span>
-              <span className={cn(
-                "text-lg font-bold mt-1",
-                isSelected(day) ? "text-primary-foreground" : "text-foreground"
-              )}>
-                {day.getDate()}
-              </span>
-            </button>
-          ))}
+          {getDaysInWeek().map((day, index) => {
+            const dayIsClosed = isClosedOnDate(day);
+            return (
+              <button
+                key={index}
+                onClick={() => setSelectedDate(day)}
+                className={cn(
+                  "flex flex-col items-center p-2 rounded-lg transition-all duration-200",
+                  isSelected(day) && "bg-gold text-primary-foreground",
+                  isToday(day) && !isSelected(day) && "border-2 border-gold",
+                  !isSelected(day) && !isToday(day) && "hover:bg-secondary",
+                  dayIsClosed && !isSelected(day) && "opacity-50"
+                )}
+              >
+                <span className="text-xs text-muted-foreground">{weekDays[index]}</span>
+                <span className={cn(
+                  "text-lg font-bold mt-1",
+                  isSelected(day) ? "text-primary-foreground" : "text-foreground"
+                )}>
+                  {day.getDate()}
+                </span>
+                {dayIsClosed && (
+                  <span className="text-[10px] text-muted-foreground">Fechado</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -174,9 +191,25 @@ export function Agendamentos() {
         
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {timeSlots.map((time) => (
-              <Skeleton key={time} className="h-24 rounded-lg" />
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-lg" />
             ))}
+          </div>
+        ) : isClosed ? (
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-xl font-medium text-foreground">Salão Fechado</p>
+            <p className="text-muted-foreground mt-2">
+              O salão não funciona aos {getDayName(selectedDate.getDay()).toLowerCase()}s
+            </p>
+          </div>
+        ) : timeSlots.length === 0 ? (
+          <div className="text-center py-12">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-xl font-medium text-foreground">Sem Horários Configurados</p>
+            <p className="text-muted-foreground mt-2">
+              Configure os horários de funcionamento nas configurações
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
