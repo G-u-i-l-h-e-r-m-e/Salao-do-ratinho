@@ -49,16 +49,30 @@ export function useAuth() {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    // Se a sessão não existe no servidor, ainda assim limpa o estado local
-    if (error?.message?.includes('session_not_found') || error?.message?.includes('Auth session missing')) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      // Se a sessão não existe no servidor, faz logout local
+      if (error?.message?.includes('session_not_found') || error?.message?.includes('Auth session missing')) {
+        // Força logout local
+        await supabase.auth.signOut({ scope: 'local' });
+        setSession(null);
+        setUser(null);
+        return { error: null };
+      }
+      
+      if (!error) {
+        setSession(null);
+        setUser(null);
+      }
+      
+      return { error };
+    } catch (e) {
+      // Em caso de erro inesperado, limpa estado local
       setSession(null);
       setUser(null);
       return { error: null };
     }
-    
-    return { error };
   };
 
   return {
