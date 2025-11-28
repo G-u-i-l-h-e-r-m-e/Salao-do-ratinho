@@ -2,41 +2,34 @@
 
 API REST para gerenciamento do Salão do Ratinho.
 
-## Deploy Rápido
+## Deploy no Vercel
 
-### Render (Recomendado - Gratuito)
+### Passo 1: Criar novo projeto no Vercel
+1. Acesse [vercel.com](https://vercel.com) e faça login
+2. Clique em "Add New..." → "Project"
 
-1. Acesse [render.com](https://render.com) e crie uma conta
-2. Clique em "New" → "Web Service"
-3. Conecte seu repositório GitHub ou faça upload do código
-4. Configure:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-   - **Environment Variables**: Adicione `MONGODB_URI` com sua connection string
+### Passo 2: Fazer upload desta pasta
+1. Na tela de criação do projeto, escolha "Import Git Repository" ou arraste esta pasta
+2. **IMPORTANTE**: Faça upload apenas do conteúdo desta pasta `api-externa`, não do projeto inteiro
 
-### Railway
+### Passo 3: Configurar variável de ambiente
+1. Antes de fazer deploy, clique em "Environment Variables"
+2. Adicione a variável:
+   - **Nome**: `MONGODB_URI`
+   - **Valor**: Sua connection string do MongoDB Atlas
+   - Exemplo: `mongodb+srv://usuario:senha@cluster.mongodb.net/salao-do-ratinho`
 
-1. Acesse [railway.app](https://railway.app)
-2. Crie um novo projeto
-3. Faça deploy via GitHub ou CLI
-4. Adicione a variável `MONGODB_URI` nas configurações
+### Passo 4: Deploy
+1. Clique em "Deploy"
+2. Aguarde o build finalizar
+3. Copie a URL gerada (ex: `https://seu-projeto.vercel.app`)
 
-## Desenvolvimento Local
-
-```bash
-# Instalar dependências
-npm install
-
-# Criar arquivo .env
-cp .env.example .env
-# Edite o .env com sua MONGODB_URI
-
-# Iniciar em modo desenvolvimento
-npm run dev
-
-# Iniciar em produção
-npm start
+### Passo 5: Testar a API
+Acesse no navegador:
 ```
+https://seu-projeto.vercel.app/api/health
+```
+Deve retornar: `{"status":"ok","timestamp":"..."}`
 
 ## Endpoints
 
@@ -54,7 +47,7 @@ npm start
 - `DELETE /api/services/:id` - Excluir
 
 ### Agendamentos
-- `GET /api/appointments?date=YYYY-MM-DD` - Listar (filtro opcional por data)
+- `GET /api/appointments?date=YYYY-MM-DD` - Listar (filtro opcional)
 - `POST /api/appointments` - Criar
 - `PUT /api/appointments/:id` - Atualizar
 - `DELETE /api/appointments/:id` - Excluir
@@ -67,8 +60,23 @@ npm start
 - `DELETE /api/transactions/:id` - Excluir
 
 ### Health Check
-- `GET /health` - Status da API
+- `GET /api/health` - Status da API
+
+## Estrutura de Arquivos
+
+```
+api-externa/
+├── api/
+│   └── index.js      # Função serverless (Vercel)
+├── package.json      # Dependências
+├── vercel.json       # Configuração Vercel
+├── .env.example      # Exemplo de variáveis
+└── README.md         # Este arquivo
+```
 
 ## Após o Deploy
 
-Copie a URL da sua API (ex: `https://api-salao.onrender.com`) e configure no frontend do Lovable.
+Atualize a URL da API no frontend (arquivo `src/lib/api.ts`):
+```typescript
+const API_BASE_URL = 'https://sua-url-vercel.vercel.app';
+```
