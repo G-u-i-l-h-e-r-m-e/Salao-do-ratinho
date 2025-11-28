@@ -182,8 +182,9 @@ export function ClientPortal() {
         {/* Banner de Promoções */}
         {(() => {
           const savedPromotion = localStorage.getItem('promotion');
-          const promo = savedPromotion ? JSON.parse(savedPromotion) : { active: true, title: '🎉 Promoção Especial!', text: 'Traga um amigo e ganhe 10% de desconto no próximo corte. Aproveite!' };
-          if (!promo.active) return null;
+          if (!savedPromotion) return null;
+          const promo = JSON.parse(savedPromotion);
+          if (!promo.active || !promo.title || !promo.text) return null;
           return (
             <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
               <CardContent className="py-4">

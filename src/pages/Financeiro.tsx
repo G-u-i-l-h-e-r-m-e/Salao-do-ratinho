@@ -7,6 +7,8 @@ import { useTransactions, Transaction } from '@/hooks/useTransactions';
 import { TransactionDialog } from '@/components/TransactionDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function Financeiro() {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -64,6 +66,14 @@ export function Financeiro() {
     }).format(value);
   };
 
+  const formatDate = (dateStr: string) => {
+    try {
+      return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return dateStr;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -83,28 +93,28 @@ export function Financeiro() {
         <StatCard
           title="Receita Total"
           value={loading ? '...' : formatCurrency(summary?.income || 0)}
-          change="+12% vs mês anterior"
+          change="Entradas do mês"
           changeType="positive"
           icon={TrendingUp}
         />
         <StatCard
           title="Despesas"
           value={loading ? '...' : formatCurrency(summary?.expense || 0)}
-          change="-5% vs mês anterior"
-          changeType="positive"
+          change="Saídas do mês"
+          changeType="negative"
           icon={TrendingDown}
         />
         <StatCard
           title="Saldo"
           value={loading ? '...' : formatCurrency(summary?.balance || 0)}
-          change="+18% vs mês anterior"
+          change="Balanço atual"
           changeType={summary?.balance && summary.balance >= 0 ? 'positive' : 'negative'}
           icon={DollarSign}
         />
         <StatCard
           title="Transações"
           value={loading ? '...' : String(summary?.count || 0)}
-          change="Este período"
+          change="Este mês"
           changeType="neutral"
           icon={TrendingUp}
         />
@@ -155,7 +165,7 @@ export function Financeiro() {
                     <p className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
                       {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
                     </p>
-                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(transaction.date)}</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
