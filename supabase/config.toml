@@ -2,3 +2,12 @@ project_id = "nllqfcygkhsxhuywrbov"
 
 [functions.mongodb-clients]
 verify_jwt = false
+
+[functions.mongodb-appointments]
+verify_jwt = false
+
+[functions.mongodb-services]
+verify_jwt = false
+
+[functions.mongodb-transactions]
+verify_jwt = false

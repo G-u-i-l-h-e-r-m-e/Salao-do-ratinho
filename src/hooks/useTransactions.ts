@@ -1,0 +1,166 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export interface Transaction {
+  _id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  paymentMethod?: string;
+  clientName?: string;
+  date: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface TransactionSummary {
+  income: number;
+  expense: number;
+  balance: number;
+  count: number;
+}
+
+export function useTransactions(startDate?: string, endDate?: string) {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [summary, setSummary] = useState<TransactionSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('mongodb-transactions', {
+        body: { action: 'list', startDate, endDate },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setTransactions(data.data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar as transações',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [startDate, endDate, toast]);
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('mongodb-transactions', {
+        body: { action: 'summary', startDate, endDate },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setSummary(data.data);
+    } catch (error) {
+      console.error('Error fetching summary:', error);
+    }
+  }, [startDate, endDate]);
+
+  useEffect(() => {
+    fetchTransactions();
+    fetchSummary();
+  }, [fetchTransactions, fetchSummary]);
+
+  const createTransaction = async (transactionData: Omit<Transaction, '_id'>) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('mongodb-transactions', {
+        body: { action: 'create', data: transactionData },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast({
+        title: 'Sucesso',
+        description: 'Transação registrada com sucesso',
+      });
+
+      await fetchTransactions();
+      await fetchSummary();
+      return data.data;
+    } catch (error) {
+      console.error('Error creating transaction:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível registrar a transação',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const updateTransaction = async (id: string, transactionData: Partial<Transaction>) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('mongodb-transactions', {
+        body: { action: 'update', id, data: transactionData },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast({
+        title: 'Sucesso',
+        description: 'Transação atualizada com sucesso',
+      });
+
+      await fetchTransactions();
+      await fetchSummary();
+      return data.data;
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível atualizar a transação',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('mongodb-transactions', {
+        body: { action: 'delete', id },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      toast({
+        title: 'Sucesso',
+        description: 'Transação excluída com sucesso',
+      });
+
+      await fetchTransactions();
+      await fetchSummary();
+    } catch (error) {
+      console.error('Error deleting transaction:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível excluir a transação',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  return {
+    transactions,
+    summary,
+    loading,
+    fetchTransactions,
+    fetchSummary,
+    createTransaction,
+    updateTransaction,
+    deleteTransaction,
+  };
+}

@@ -1,131 +1,212 @@
-import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { useState } from 'react';
+import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Plus, Trash2, Edit } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { RevenueChart } from '@/components/RevenueChart';
-
-const transactions = [
-  { id: 1, client: 'João Silva', service: 'Corte + Barba', amount: 80, type: 'income', date: '28/11/2025 09:30' },
-  { id: 2, client: 'Pedro Santos', service: 'Corte Degradê', amount: 50, type: 'income', date: '28/11/2025 10:45' },
-  { id: 3, description: 'Produtos de higiene', amount: 150, type: 'expense', date: '28/11/2025 12:00' },
-  { id: 4, client: 'Carlos Oliveira', service: 'Barba', amount: 35, type: 'income', date: '28/11/2025 11:45' },
-  { id: 5, client: 'Rafael Costa', service: 'Corte Social', amount: 45, type: 'income', date: '27/11/2025 14:30' },
-  { id: 6, description: 'Energia elétrica', amount: 280, type: 'expense', date: '27/11/2025 08:00' },
-];
-
-const services = [
-  { name: 'Corte + Barba', count: 45, revenue: 3600 },
-  { name: 'Corte Degradê', count: 38, revenue: 1900 },
-  { name: 'Corte Social', count: 32, revenue: 1440 },
-  { name: 'Barba', count: 28, revenue: 980 },
-  { name: 'Hidratação', count: 15, revenue: 600 },
-];
+import { Button } from '@/components/ui/button';
+import { useTransactions, Transaction } from '@/hooks/useTransactions';
+import { TransactionDialog } from '@/components/TransactionDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function Financeiro() {
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+
+  const { transactions, summary, loading, createTransaction, updateTransaction, deleteTransaction } = useTransactions();
+
+  const handleNewTransaction = () => {
+    setSelectedTransaction(null);
+    setDialogOpen(true);
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setDialogOpen(true);
+  };
+
+  const handleSaveTransaction = async (data: Omit<Transaction, '_id'>) => {
+    if (selectedTransaction) {
+      await updateTransaction(selectedTransaction._id, data);
+    } else {
+      await createTransaction(data);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setTransactionToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (transactionToDelete) {
+      await deleteTransaction(transactionToDelete);
+      setTransactionToDelete(null);
+    }
+    setDeleteDialogOpen(false);
+  };
+
+  const getPaymentMethodLabel = (method?: string) => {
+    switch (method) {
+      case 'dinheiro': return 'Dinheiro';
+      case 'pix': return 'PIX';
+      case 'cartao_credito': return 'Cartão de Crédito';
+      case 'cartao_debito': return 'Cartão de Débito';
+      default: return method || '-';
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="pt-10 lg:pt-0">
-        <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground">Financeiro</h1>
-        <p className="text-muted-foreground mt-2">Acompanhe suas receitas e despesas</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-10 lg:pt-0">
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-serif font-bold text-foreground">Financeiro</h1>
+          <p className="text-muted-foreground mt-2">Acompanhe suas receitas e despesas</p>
+        </div>
+        <Button variant="gold" size="lg" onClick={handleNewTransaction}>
+          <Plus className="h-5 w-5" />
+          Nova Transação
+        </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
-          title="Receita Mensal"
-          value="R$ 8.450"
+          title="Receita Total"
+          value={loading ? '...' : formatCurrency(summary?.income || 0)}
           change="+12% vs mês anterior"
           changeType="positive"
           icon={TrendingUp}
         />
         <StatCard
           title="Despesas"
-          value="R$ 2.130"
+          value={loading ? '...' : formatCurrency(summary?.expense || 0)}
           change="-5% vs mês anterior"
           changeType="positive"
           icon={TrendingDown}
         />
         <StatCard
-          title="Lucro Líquido"
-          value="R$ 6.320"
+          title="Saldo"
+          value={loading ? '...' : formatCurrency(summary?.balance || 0)}
           change="+18% vs mês anterior"
-          changeType="positive"
+          changeType={summary?.balance && summary.balance >= 0 ? 'positive' : 'negative'}
           icon={DollarSign}
         />
         <StatCard
-          title="Ticket Médio"
-          value="R$ 58"
-          change="+R$ 3 vs mês anterior"
-          changeType="positive"
+          title="Transações"
+          value={loading ? '...' : String(summary?.count || 0)}
+          change="Este período"
+          changeType="neutral"
           icon={TrendingUp}
         />
       </div>
 
-      {/* Chart and Services */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <RevenueChart />
-        </div>
+      {/* Chart */}
+      <div className="glass-card rounded-xl p-6">
+        <RevenueChart />
+      </div>
+
+      {/* Transactions */}
+      <div className="glass-card rounded-xl p-6">
+        <h3 className="font-serif text-xl font-bold text-foreground mb-6">Transações</h3>
         
-        <div className="glass-card rounded-xl p-6">
-          <h3 className="font-serif text-xl font-bold text-foreground mb-6">Serviços Mais Vendidos</h3>
+        {loading ? (
           <div className="space-y-4">
-            {services.map((service, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground">{service.name}</span>
-                  <span className="text-sm text-gold font-semibold">R$ {service.revenue.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-gold to-gold-light rounded-full"
-                      style={{ width: `${(service.count / 45) * 100}%` }}
-                    />
+            {[...Array(5)].map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-lg" />
+            ))}
+          </div>
+        ) : transactions.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Nenhuma transação registrada</p>
+            <Button variant="outline" className="mt-4" onClick={handleNewTransaction}>
+              Adicionar transação
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {transactions.map((transaction) => (
+              <div key={transaction._id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-lg ${transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                    {transaction.type === 'income' ? (
+                      <ArrowUpRight className="h-5 w-5 text-green-400" />
+                    ) : (
+                      <ArrowDownRight className="h-5 w-5 text-red-400" />
+                    )}
                   </div>
-                  <span className="text-xs text-muted-foreground w-12">{service.count}x</span>
+                  <div>
+                    <p className="font-medium text-foreground">{transaction.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {transaction.clientName && `${transaction.clientName} • `}
+                      {getPaymentMethodLabel(transaction.paymentMethod)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                      {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{transaction.date}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEditTransaction(transaction)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteClick(transaction._id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Recent Transactions */}
-      <div className="glass-card rounded-xl p-6">
-        <h3 className="font-serif text-xl font-bold text-foreground mb-6">Transações Recentes</h3>
-        <div className="space-y-4">
-          {transactions.map((transaction) => (
-            <div key={transaction.id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-              <div className="flex items-center gap-4">
-                <div className={`p-2 rounded-lg ${transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                  {transaction.type === 'income' ? (
-                    <ArrowUpRight className="h-5 w-5 text-green-400" />
-                  ) : (
-                    <ArrowDownRight className="h-5 w-5 text-red-400" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">
-                    {transaction.client || transaction.description}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {transaction.service || 'Despesa'}
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                  {transaction.type === 'income' ? '+' : '-'} R$ {transaction.amount}
-                </p>
-                <p className="text-xs text-muted-foreground">{transaction.date}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <TransactionDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        transaction={selectedTransaction}
+        onSave={handleSaveTransaction}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
