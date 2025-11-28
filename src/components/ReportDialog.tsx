@@ -95,12 +95,13 @@ export function ReportDialog({ open, onOpenChange }: ReportDialogProps) {
         appointments
       );
 
-      // Download do arquivo
-      const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+      // Download do arquivo CSV
+      const BOM = '\uFEFF'; // UTF-8 BOM para Excel reconhecer acentos
+      const blob = new Blob([BOM + reportContent], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `relatorio_${startStr}_a_${endStr}.txt`;
+      link.download = `relatorio_${startStr}_a_${endStr}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -108,7 +109,7 @@ export function ReportDialog({ open, onOpenChange }: ReportDialogProps) {
 
       toast({
         title: 'Relatório gerado!',
-        description: 'O download foi iniciado automaticamente.'
+        description: 'O download do arquivo CSV foi iniciado.'
       });
 
       onOpenChange(false);
@@ -123,11 +124,15 @@ export function ReportDialog({ open, onOpenChange }: ReportDialogProps) {
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
+  const formatCurrencyCSV = (value: number) => {
+    return value.toFixed(2).replace('.', ',');
+  };
+
+  const escapeCSV = (value: string) => {
+    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
   };
 
   const generateReportContent = (
@@ -138,87 +143,58 @@ export function ReportDialog({ open, onOpenChange }: ReportDialogProps) {
     clients: any[],
     appointments: any[]
   ) => {
-    const divider = '═'.repeat(50);
-    const lines = [
-      divider,
-      '              SALÃO DO RATINHO - RELATÓRIO',
-      divider,
-      '',
-      `Período: ${format(start, 'dd/MM/yyyy')} a ${format(end, 'dd/MM/yyyy')}`,
-      `Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
-      '',
-      divider,
-      '                    RESUMO FINANCEIRO',
-      divider,
-      '',
-      `  💰 Receita Total:     ${formatCurrency(summary.income)}`,
-      `  💸 Despesas Total:    ${formatCurrency(summary.expense)}`,
-      `  📊 Saldo do Período:  ${formatCurrency(summary.balance)}`,
-      `  📝 Total Transações:  ${summary.count}`,
-      '',
-      divider,
-      '                    AGENDAMENTOS',
-      divider,
-      '',
-      `  📅 Total de Agendamentos: ${appointments.length}`,
-      `  ✅ Confirmados: ${appointments.filter((a: any) => a.status === 'confirmed').length}`,
-      `  ⏳ Pendentes: ${appointments.filter((a: any) => a.status === 'pending').length}`,
-      `  ✔️ Concluídos: ${appointments.filter((a: any) => a.status === 'completed').length}`,
-      `  ❌ Cancelados: ${appointments.filter((a: any) => a.status === 'cancelled').length}`,
-      '',
-    ];
-
+    const lines: string[] = [];
+    
+    // Cabeçalho do relatório
+    lines.push('RELATÓRIO FINANCEIRO - SALÃO DO RATINHO');
+    lines.push(`Período:,${format(start, 'dd/MM/yyyy')} a ${format(end, 'dd/MM/yyyy')}`);
+    lines.push(`Gerado em:,${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`);
+    lines.push('');
+    
+    // Resumo financeiro
+    lines.push('RESUMO FINANCEIRO');
+    lines.push('Descrição,Valor');
+    lines.push(`Receita Total,${formatCurrencyCSV(summary.income)}`);
+    lines.push(`Despesas Total,${formatCurrencyCSV(summary.expense)}`);
+    lines.push(`Saldo do Período,${formatCurrencyCSV(summary.balance)}`);
+    lines.push(`Total de Transações,${summary.count}`);
+    lines.push('');
+    
+    // Estatísticas de agendamentos
+    lines.push('AGENDAMENTOS');
+    lines.push('Status,Quantidade');
+    lines.push(`Total,${appointments.length}`);
+    lines.push(`Confirmados,${appointments.filter((a: any) => a.status === 'confirmed').length}`);
+    lines.push(`Pendentes,${appointments.filter((a: any) => a.status === 'pending').length}`);
+    lines.push(`Concluídos,${appointments.filter((a: any) => a.status === 'completed').length}`);
+    lines.push(`Cancelados,${appointments.filter((a: any) => a.status === 'cancelled').length}`);
+    lines.push('');
+    
     // Lista de transações
     if (transactions.length > 0) {
-      lines.push(divider);
-      lines.push('                    TRANSAÇÕES DETALHADAS');
-      lines.push(divider);
-      lines.push('');
+      lines.push('TRANSAÇÕES DETALHADAS');
+      lines.push('Data,Tipo,Descrição,Cliente,Forma de Pagamento,Valor');
       
-      const incomes = transactions.filter(t => t.type === 'income');
-      const expenses = transactions.filter(t => t.type === 'expense');
-
-      if (incomes.length > 0) {
-        lines.push('  ENTRADAS:');
-        incomes.forEach(t => {
-          lines.push(`    • ${t.date} - ${t.description}: ${formatCurrency(t.amount)}`);
-        });
-        lines.push('');
-      }
-
-      if (expenses.length > 0) {
-        lines.push('  SAÍDAS:');
-        expenses.forEach(t => {
-          lines.push(`    • ${t.date} - ${t.description}: ${formatCurrency(t.amount)}`);
-        });
-        lines.push('');
-      }
-    }
-
-    // Estatísticas de clientes
-    lines.push(divider);
-    lines.push('                    CLIENTES');
-    lines.push(divider);
-    lines.push('');
-    lines.push(`  👥 Total de Clientes Cadastrados: ${clients.length}`);
-    
-    const topClients = [...clients]
-      .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
-      .slice(0, 5);
-    
-    if (topClients.length > 0) {
-      lines.push('');
-      lines.push('  🏆 TOP 5 CLIENTES (por valor gasto):');
-      topClients.forEach((c, i) => {
-        lines.push(`    ${i + 1}. ${c.name} - ${formatCurrency(c.totalSpent || 0)} (${c.visits || 0} visitas)`);
+      transactions.forEach(t => {
+        const tipo = t.type === 'income' ? 'Entrada' : 'Saída';
+        const cliente = t.clientName || '-';
+        const pagamento = t.paymentMethod || '-';
+        lines.push(`${t.date},${tipo},${escapeCSV(t.description)},${escapeCSV(cliente)},${pagamento},${formatCurrencyCSV(t.amount)}`);
       });
+      lines.push('');
     }
-
-    lines.push('');
-    lines.push(divider);
-    lines.push('              Relatório gerado pelo sistema');
-    lines.push('                 Salão do Ratinho © 2025');
-    lines.push(divider);
+    
+    // Lista de clientes
+    if (clients.length > 0) {
+      lines.push('CLIENTES');
+      lines.push('Nome,Email,Telefone,Visitas,Total Gasto');
+      
+      clients
+        .sort((a, b) => (b.totalSpent || 0) - (a.totalSpent || 0))
+        .forEach(c => {
+          lines.push(`${escapeCSV(c.name)},${c.email},${c.phone},${c.visits || 0},${formatCurrencyCSV(c.totalSpent || 0)}`);
+        });
+    }
 
     return lines.join('\n');
   };
