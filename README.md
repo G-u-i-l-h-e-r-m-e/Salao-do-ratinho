@@ -182,3 +182,4 @@ Para dúvidas ou suporte, entre em contato através do salão.
 ---
 
 Desenvolvido com ❤️ usando [Lovable](https://lovable.dev)
+# Salao-do-ratinho
