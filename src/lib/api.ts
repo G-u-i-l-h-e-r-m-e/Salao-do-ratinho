@@ -1,5 +1,5 @@
-// URL base da API externa (Vercel)
-const API_BASE_URL = 'https://exactly-as-seen.vercel.app';
+// URL base da API externa (Render)
+const API_BASE_URL = 'https://api-salao-do-ratinho.onrender.com';
 
 interface ApiResponse<T> {
   success: boolean;
