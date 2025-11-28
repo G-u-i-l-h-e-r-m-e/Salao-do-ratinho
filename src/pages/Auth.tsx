@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { Scissors, Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2 } from 'lucide-react';
 import { z } from 'zod';
+import logo from '@/assets/logo.png';
 
 const authSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -125,12 +126,11 @@ export function Auth() {
 
       <Card className="w-full max-w-md glass-card animate-scale-in relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Scissors className="h-8 w-8 text-primary" />
-          </div>
+          <img src={logo} alt="Salão do Ratinho" className="mx-auto h-20 w-20 object-contain" />
           <div>
-            <CardTitle className="text-2xl gold-text">
-              Salão do Ratinho
+            <CardTitle className="text-2xl">
+              <span className="text-foreground">Salão do </span>
+              <span className="text-primary">Ratinho</span>
             </CardTitle>
             <CardDescription className="text-muted-foreground mt-2">
               {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}

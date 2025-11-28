@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
-import { User, Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowLeft } from 'lucide-react';
 import { z } from 'zod';
+import logo from '@/assets/logo.png';
 
 const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'Senha deve ter no mínimo 6 caracteres');
@@ -199,12 +200,11 @@ export function ClientAuth() {
 
       <Card className="w-full max-w-md glass-card animate-scale-in relative z-10">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <User className="h-8 w-8 text-primary" />
-          </div>
+          <img src={logo} alt="Salão do Ratinho" className="mx-auto h-20 w-20 object-contain" />
           <div>
-            <CardTitle className="text-2xl gold-text">
-              Área do Cliente
+            <CardTitle className="text-2xl">
+              <span className="text-foreground">Área do </span>
+              <span className="text-primary">Cliente</span>
             </CardTitle>
             <CardDescription className="text-muted-foreground mt-2">
               {step === 'email' && 'Digite seu email cadastrado'}
