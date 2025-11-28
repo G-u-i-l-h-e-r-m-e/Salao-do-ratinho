@@ -69,11 +69,20 @@ export function Auth() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    setShowConfirmDialog(true);
+    
+    // Verifica se já aceitou os termos
+    const termsAccepted = localStorage.getItem('termsAccepted') === 'true';
+    const privacyAccepted = localStorage.getItem('privacyAccepted') === 'true';
+    
+    if (termsAccepted && privacyAccepted) {
+      // Se já aceitou, faz login/cadastro direto
+      handleDirectSubmit();
+    } else {
+      setShowConfirmDialog(true);
+    }
   };
 
-  const handleConfirmSubmit = async () => {
-    setShowConfirmDialog(false);
+  const handleDirectSubmit = async () => {
     setIsSubmitting(true);
 
     try {
@@ -125,6 +134,16 @@ export function Auth() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirmDialog(false);
+    
+    // Salva aceite dos termos e política
+    localStorage.setItem('termsAccepted', 'true');
+    localStorage.setItem('privacyAccepted', 'true');
+    
+    await handleDirectSubmit();
   };
 
   if (loading) {
