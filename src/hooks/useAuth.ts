@@ -7,6 +7,23 @@ export function useAuth() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Limpa todos os dados de autenticação do localStorage
+  const clearAuthData = useCallback(() => {
+    // Remove todas as chaves relacionadas ao Supabase auth
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Limpa estado local
+    setSession(null);
+    setUser(null);
+  }, []);
+
   // Função para verificar e renovar sessão
   const refreshSessionIfNeeded = useCallback(async () => {
     if (!session) return;
@@ -84,24 +101,26 @@ export function useAuth() {
     try {
       const { error } = await supabase.auth.signOut();
       
-      // Se a sessão não existe no servidor, faz logout local
-      if (error?.message?.includes('session_not_found') || error?.message?.includes('Auth session missing')) {
-        await supabase.auth.signOut({ scope: 'local' });
-        setSession(null);
-        setUser(null);
+      // Se deu erro de sessão não encontrada, limpa tudo localmente
+      if (error) {
+        const errorMsg = error.message?.toLowerCase() || '';
+        if (errorMsg.includes('session_not_found') || 
+            errorMsg.includes('session missing') ||
+            errorMsg.includes('auth session')) {
+          clearAuthData();
+          return { error: null };
+        }
+        // Outro erro - mesmo assim limpa localmente
+        clearAuthData();
         return { error: null };
       }
       
-      if (!error) {
-        setSession(null);
-        setUser(null);
-      }
-      
-      return { error };
+      // Sucesso - limpa estado
+      clearAuthData();
+      return { error: null };
     } catch (e) {
-      // Em caso de erro inesperado, limpa estado local
-      setSession(null);
-      setUser(null);
+      // Qualquer erro - limpa localmente
+      clearAuthData();
       return { error: null };
     }
   };
