@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Plus, Trash2, Edit, FileText } from 'lucide-react';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/PaginationControls';
 import { StatCard } from '@/components/StatCard';
 import { RevenueChart } from '@/components/RevenueChart';
 import { Button } from '@/components/ui/button';
@@ -19,6 +21,9 @@ export function Financeiro() {
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
 
   const { transactions, summary, loading, createTransaction, updateTransaction, deleteTransaction } = useTransactions();
+
+  // Pagination for transactions
+  const transactionsPagination = usePagination(transactions, { itemsPerPage: 6 });
 
   const handleNewTransaction = () => {
     setSelectedTransaction(null);
@@ -149,54 +154,65 @@ export function Financeiro() {
             </Button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {transactions.map((transaction) => (
-              <div key={transaction._id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-lg ${transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                    {transaction.type === 'income' ? (
-                      <ArrowUpRight className="h-5 w-5 text-green-400" />
-                    ) : (
-                      <ArrowDownRight className="h-5 w-5 text-red-400" />
-                    )}
+          <>
+            <div className="space-y-4">
+              {transactionsPagination.paginatedItems.map((transaction) => (
+                <div key={transaction._id} className="flex items-center justify-between py-3 border-b border-border last:border-0">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-lg ${transaction.type === 'income' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                      {transaction.type === 'income' ? (
+                        <ArrowUpRight className="h-5 w-5 text-green-400" />
+                      ) : (
+                        <ArrowDownRight className="h-5 w-5 text-red-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{transaction.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {transaction.clientName && `${transaction.clientName} • `}
+                        {getPaymentMethodLabel(transaction.paymentMethod)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">{transaction.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.clientName && `${transaction.clientName} • `}
-                      {getPaymentMethodLabel(transaction.paymentMethod)}
-                    </p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
+                        {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{formatDate(transaction.date)}</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => handleDeleteClick(transaction._id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className={`font-bold ${transaction.type === 'income' ? 'text-green-400' : 'text-red-400'}`}>
-                      {transaction.type === 'income' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{formatDate(transaction.date)}</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEditTransaction(transaction)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClick(transaction._id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            {transactionsPagination.showPagination && (
+              <PaginationControls
+                currentPage={transactionsPagination.currentPage}
+                totalPages={transactionsPagination.totalPages}
+                onPageChange={transactionsPagination.goToPage}
+                hasNextPage={transactionsPagination.hasNextPage}
+                hasPreviousPage={transactionsPagination.hasPreviousPage}
+              />
+            )}
+          </>
         )}
       </div>
 

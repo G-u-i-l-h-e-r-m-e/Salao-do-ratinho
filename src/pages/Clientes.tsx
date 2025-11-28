@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Phone, Mail, Edit2, Trash2, AlertTriangle } from 'lucide-react';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/PaginationControls';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useClients, Client } from '@/hooks/useClients';
@@ -31,6 +33,9 @@ export function Clientes() {
     client.phone.includes(searchTerm) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination for clients
+  const clientsPagination = usePagination(filteredClients, { itemsPerPage: 6 });
 
   const handleSave = async (data: Parameters<typeof createClient>[0]) => {
     if (editingClient) {
@@ -114,63 +119,74 @@ export function Clientes() {
 
       {/* Clients Grid */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filteredClients.map((client, index) => (
-            <div 
-              key={client._id} 
-              className="glass-card rounded-xl p-6 hover-lift cursor-pointer animate-slide-up opacity-0 group"
-              style={{ animationDelay: `${0.05 * (index + 1)}s` }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary-foreground font-bold text-lg">
-                    {client.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-lg text-foreground truncate">{client.name}</h3>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(client)}>
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(client)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {clientsPagination.paginatedItems.map((client, index) => (
+              <div 
+                key={client._id} 
+                className="glass-card rounded-xl p-6 hover-lift cursor-pointer animate-slide-up opacity-0 group"
+                style={{ animationDelay: `${0.05 * (index + 1)}s` }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gold to-gold-dark flex items-center justify-center flex-shrink-0">
+                    <span className="text-primary-foreground font-bold text-lg">
+                      {client.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-serif font-bold text-lg text-foreground truncate">{client.name}</h3>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEdit(client)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(client)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4 text-gold" />
+                        <span>{client.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4 text-gold" />
+                        <span className="truncate">{client.email}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4 text-gold" />
-                      <span>{client.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4 text-gold" />
-                      <span className="truncate">{client.email}</span>
-                    </div>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-2xl font-bold text-gold">{client.visits}</p>
+                    <p className="text-xs text-muted-foreground">Visitas</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {new Date(client.updatedAt).toLocaleDateString('pt-BR')}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Última visita</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-400">{formatCurrency(client.totalSpent)}</p>
+                    <p className="text-xs text-muted-foreground">Total gasto</p>
                   </div>
                 </div>
               </div>
-              
-              <div className="mt-4 pt-4 border-t border-border grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-2xl font-bold text-gold">{client.visits}</p>
-                  <p className="text-xs text-muted-foreground">Visitas</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {new Date(client.updatedAt).toLocaleDateString('pt-BR')}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Última visita</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-400">{formatCurrency(client.totalSpent)}</p>
-                  <p className="text-xs text-muted-foreground">Total gasto</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {clientsPagination.showPagination && (
+            <PaginationControls
+              currentPage={clientsPagination.currentPage}
+              totalPages={clientsPagination.totalPages}
+              onPageChange={clientsPagination.goToPage}
+              hasNextPage={clientsPagination.hasNextPage}
+              hasPreviousPage={clientsPagination.hasPreviousPage}
+            />
+          )}
+        </>
       )}
 
       {!loading && filteredClients.length === 0 && (
