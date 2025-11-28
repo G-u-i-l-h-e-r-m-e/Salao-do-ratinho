@@ -35,7 +35,6 @@ O **Salão do Ratinho** é uma aplicação web full-stack que permite:
 - **date-fns** - Manipulação de datas
 
 ### Backend
-- **Supabase** - Autenticação e banco de dados (via Lovable Cloud)
 - **API REST** - Backend customizado em Node.js/Express
 - **MongoDB** - Banco de dados NoSQL para dados do negócio
 
@@ -110,12 +109,6 @@ O app estará disponível em `http://localhost:8080`
 
 ### Variáveis de Ambiente
 
-O projeto utiliza as seguintes variáveis (configuradas automaticamente pelo Lovable Cloud):
-
-- `VITE_SUPABASE_URL` - URL do projeto Supabase
-- `VITE_SUPABASE_PUBLISHABLE_KEY` - Chave pública do Supabase
-- `VITE_SUPABASE_PROJECT_ID` - ID do projeto
-
 Para a API externa:
 - `MONGODB_URI` - String de conexão do MongoDB
 
@@ -162,8 +155,6 @@ O projeto utiliza um design system customizado com:
 
 ## 🚀 Deploy
 
-### Frontend (Lovable)
-O deploy do frontend é feito automaticamente pelo Lovable através do botão "Publish".
 
 ### API Externa (Vercel)
 ```bash
@@ -181,5 +172,4 @@ Para dúvidas ou suporte, entre em contato através do salão.
 
 ---
 
-Desenvolvido com ❤️ usando [Lovable](https://lovable.dev)
 # Salao-do-ratinho
