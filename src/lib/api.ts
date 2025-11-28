@@ -1,6 +1,5 @@
-// URL base da API externa
-// Configure esta URL após fazer o deploy da API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// URL base da API externa (Vercel)
+const API_BASE_URL = 'https://exactly-as-seen.vercel.app';
 
 interface ApiResponse<T> {
   success: boolean;
