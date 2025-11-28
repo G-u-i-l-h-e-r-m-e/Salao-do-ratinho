@@ -346,12 +346,12 @@ export function ClientPortal() {
           {/* Appointments Tab */}
           <TabsContent value="appointments">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <CardTitle>Meus Agendamentos</CardTitle>
                   <CardDescription>Visualize e agende novos horários</CardDescription>
                 </div>
-                <Button variant="gold" size="sm" onClick={() => setAppointmentDialogOpen(true)}>
+                <Button variant="gold" size="sm" className="w-full sm:w-auto" onClick={() => setAppointmentDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Agendamento
                 </Button>
