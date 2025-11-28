@@ -144,8 +144,26 @@ export function AppointmentDialog({
     }
   }, [timeSlots, formData.time]);
 
+  // Valida se o formulário está completo
+  const isFormValid = useMemo(() => {
+    return (
+      formData.clientName.trim() !== '' &&
+      formData.service !== '' &&
+      formData.time !== '' &&
+      formData.date !== '' &&
+      !isClosed &&
+      timeSlots.includes(formData.time)
+    );
+  }, [formData, isClosed, timeSlots]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validação adicional antes de salvar
+    if (!isFormValid) {
+      return;
+    }
+    
     setLoading(true);
     try {
       await onSave(formData);
@@ -338,7 +356,7 @@ export function AppointmentDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" variant="gold" disabled={loading || isClosed || timeSlots.length === 0}>
+            <Button type="submit" variant="gold" disabled={loading || !isFormValid}>
               {loading ? 'Salvando...' : 'Salvar'}
             </Button>
           </div>
