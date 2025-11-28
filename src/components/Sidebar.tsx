@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -28,6 +28,7 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -37,6 +38,8 @@ export function Sidebar() {
         description: error.message,
         variant: 'destructive',
       });
+    } else {
+      navigate('/auth');
     }
   };
 
