@@ -25,7 +25,8 @@ import {
   Save,
   X,
   Plus,
-  Clock
+  Clock,
+  Megaphone
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -177,7 +178,24 @@ export function ClientPortal() {
       </header>
 
       {/* Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Banner de Promoções */}
+        <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-primary/10 rounded-full">
+                <Megaphone className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">🎉 Promoção Especial!</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Traga um amigo e ganhe 10% de desconto no próximo corte. Aproveite!
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
