@@ -1,0 +1,216 @@
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useBusinessHours } from '@/hooks/useBusinessHours';
+import { useServices } from '@/hooks/useServices';
+import { AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
+
+interface ClientAppointmentDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (data: any) => Promise<void>;
+  clientName: string;
+}
+
+export function ClientAppointmentDialog({ 
+  open, 
+  onOpenChange, 
+  onSave,
+  clientName 
+}: ClientAppointmentDialogProps) {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  
+  const [formData, setFormData] = useState({
+    service: '',
+    date: today,
+    time: '',
+    notes: '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const { activeServices } = useServices();
+  const { getTimeSlotsForDate, isClosedOnDate, getDayName } = useBusinessHours();
+
+  // Calcula os slots disponíveis baseado na data selecionada
+  const timeSlots = useMemo(() => {
+    if (!formData.date) return [];
+    const date = new Date(formData.date + 'T12:00:00');
+    return getTimeSlotsForDate(date);
+  }, [formData.date, getTimeSlotsForDate]);
+
+  const isClosed = useMemo(() => {
+    if (!formData.date) return false;
+    const date = new Date(formData.date + 'T12:00:00');
+    return isClosedOnDate(date);
+  }, [formData.date, isClosedOnDate]);
+
+  const dayName = useMemo(() => {
+    if (!formData.date) return '';
+    const date = new Date(formData.date + 'T12:00:00');
+    return getDayName(date.getDay());
+  }, [formData.date, getDayName]);
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        service: '',
+        date: today,
+        time: '',
+        notes: '',
+      });
+    }
+  }, [open, today]);
+
+  // Limpa o horário se a data mudar e o horário atual não estiver disponível
+  useEffect(() => {
+    if (formData.time && !timeSlots.includes(formData.time)) {
+      setFormData(prev => ({ ...prev, time: '' }));
+    }
+  }, [timeSlots, formData.time]);
+
+  const isFormValid = useMemo(() => {
+    return (
+      formData.service !== '' &&
+      formData.time !== '' &&
+      formData.date !== '' &&
+      !isClosed &&
+      timeSlots.includes(formData.time)
+    );
+  }, [formData, isClosed, timeSlots]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!isFormValid) return;
+    
+    setLoading(true);
+    try {
+      await onSave({
+        clientName,
+        clientPhone: '',
+        service: formData.service,
+        date: formData.date,
+        time: formData.time,
+        status: 'pending',
+        notes: formData.notes,
+      });
+      onOpenChange(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="font-serif">Novo Agendamento</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Cliente</Label>
+            <div className="p-3 bg-muted/50 rounded-md text-sm">
+              {clientName}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="service">Serviço *</Label>
+            <Select
+              value={formData.service}
+              onValueChange={(value) => setFormData({ ...formData, service: value })}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um serviço" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeServices.map((service) => (
+                  <SelectItem key={service._id} value={service.name}>
+                    {service.name} - R$ {service.price.toFixed(2)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Data *</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                min={today}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="time">Horário *</Label>
+              {isClosed ? (
+                <div className="flex items-center gap-2 h-10 px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  Fechado
+                </div>
+              ) : timeSlots.length === 0 ? (
+                <div className="flex items-center gap-2 h-10 px-3 py-2 text-sm text-muted-foreground bg-muted rounded-md">
+                  Sem horários
+                </div>
+              ) : (
+                <Select
+                  value={formData.time}
+                  onValueChange={(value) => setFormData({ ...formData, time: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Horário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+
+          {isClosed && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center gap-2 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              O salão está fechado aos {dayName.toLowerCase()}s
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Observações</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Alguma preferência ou informação adicional?"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="gold" disabled={loading || !isFormValid}>
+              {loading ? 'Agendando...' : 'Agendar'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

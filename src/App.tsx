@@ -10,7 +10,10 @@ import { Agendamentos } from "./pages/Agendamentos";
 import { Financeiro } from "./pages/Financeiro";
 import { Configuracoes } from "./pages/Configuracoes";
 import { Auth } from "./pages/Auth";
+import { ClientAuth } from "./pages/ClientAuth";
+import { ClientPortal } from "./pages/ClientPortal";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminRoute } from "./components/AdminRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,12 +25,20 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          {/* Auth routes */}
           <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/clientes" element={<ProtectedRoute><Layout><Clientes /></Layout></ProtectedRoute>} />
-          <Route path="/agendamentos" element={<ProtectedRoute><Layout><Agendamentos /></Layout></ProtectedRoute>} />
-          <Route path="/financeiro" element={<ProtectedRoute><Layout><Financeiro /></Layout></ProtectedRoute>} />
-          <Route path="/configuracoes" element={<ProtectedRoute><Layout><Configuracoes /></Layout></ProtectedRoute>} />
+          <Route path="/cliente/auth" element={<ClientAuth />} />
+          
+          {/* Client portal */}
+          <Route path="/cliente" element={<ProtectedRoute><ClientPortal /></ProtectedRoute>} />
+          
+          {/* Admin routes */}
+          <Route path="/" element={<AdminRoute><Index /></AdminRoute>} />
+          <Route path="/clientes" element={<AdminRoute><Layout><Clientes /></Layout></AdminRoute>} />
+          <Route path="/agendamentos" element={<AdminRoute><Layout><Agendamentos /></Layout></AdminRoute>} />
+          <Route path="/financeiro" element={<AdminRoute><Layout><Financeiro /></Layout></AdminRoute>} />
+          <Route path="/configuracoes" element={<AdminRoute><Layout><Configuracoes /></Layout></AdminRoute>} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
