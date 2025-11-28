@@ -50,6 +50,14 @@ export function useAuth() {
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    
+    // Se a sessão não existe no servidor, ainda assim limpa o estado local
+    if (error?.message?.includes('session_not_found') || error?.message?.includes('Auth session missing')) {
+      setSession(null);
+      setUser(null);
+      return { error: null };
+    }
+    
     return { error };
   };
 
