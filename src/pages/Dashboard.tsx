@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Users, Calendar, DollarSign, TrendingUp, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { startOfWeek, endOfWeek } from 'date-fns';
 import { StatCard } from '@/components/StatCard';
 import { AppointmentCard } from '@/components/AppointmentCard';
 import { RevenueChart } from '@/components/RevenueChart';
@@ -17,13 +18,18 @@ export function Dashboard() {
   // Get first and last day of current month
   const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
   const lastDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+  
+  // Get first and last day of current week
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 }).toISOString().split('T')[0];
+  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 0 }).toISOString().split('T')[0];
 
   const { clients, loading: clientsLoading } = useClients();
   const { appointments: todayAppointments, loading: appointmentsLoading } = useAppointments(today);
   const { transactions: todayTransactions, loading: todayTransactionsLoading } = useTransactions(today, today);
+  const { transactions: weeklyTransactions, loading: weeklyLoading } = useTransactions(weekStart, weekEnd);
   const { summary: monthlySummary, loading: monthlyLoading } = useTransactions(firstDayOfMonth, lastDayOfMonth);
 
-  const loading = clientsLoading || appointmentsLoading || todayTransactionsLoading || monthlyLoading;
+  const loading = clientsLoading || appointmentsLoading || todayTransactionsLoading || monthlyLoading || weeklyLoading;
 
   const stats = useMemo(() => {
     const todayIncome = todayTransactions
@@ -232,7 +238,7 @@ export function Dashboard() {
       </div>
 
       {/* Revenue Chart */}
-      <RevenueChart />
+      <RevenueChart transactions={weeklyTransactions} loading={weeklyLoading} />
     </div>
   );
 }

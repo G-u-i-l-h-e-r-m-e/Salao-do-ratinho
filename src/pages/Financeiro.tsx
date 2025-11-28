@@ -111,9 +111,7 @@ export function Financeiro() {
       </div>
 
       {/* Chart */}
-      <div className="glass-card rounded-xl p-6">
-        <RevenueChart />
-      </div>
+      <RevenueChart transactions={transactions} loading={loading} />
 
       {/* Transactions */}
       <div className="glass-card rounded-xl p-6">
