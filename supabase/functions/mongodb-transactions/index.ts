@@ -32,7 +32,7 @@ serve(async (req) => {
     await client.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    const db = client.database('barbershop');
+    const db = client.database('salao-do-ratinho');
     const transactions = db.collection('transactions');
 
     let result;
