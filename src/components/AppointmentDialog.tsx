@@ -5,9 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Appointment } from '@/hooks/useAppointments';
 import { useBusinessHours } from '@/hooks/useBusinessHours';
-import { AlertCircle } from 'lucide-react';
+import { useClients, Client } from '@/hooks/useClients';
+import { AlertCircle, Check, ChevronsUpDown, UserPlus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AppointmentDialogProps {
   open: boolean;
@@ -40,6 +44,7 @@ export function AppointmentDialog({
   const [formData, setFormData] = useState<{
     clientName: string;
     clientPhone: string;
+    clientId?: string;
     service: string;
     date: string;
     time: string;
@@ -48,6 +53,7 @@ export function AppointmentDialog({
   }>({
     clientName: '',
     clientPhone: '',
+    clientId: undefined,
     service: '',
     date: selectedDate,
     time: selectedTime || '',
@@ -55,8 +61,43 @@ export function AppointmentDialog({
     notes: '',
   });
   const [loading, setLoading] = useState(false);
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
 
+  const { clients } = useClients();
   const { getTimeSlotsForDate, isClosedOnDate, getDayName } = useBusinessHours();
+
+  // Filtra clientes baseado na busca
+  const filteredClients = useMemo(() => {
+    if (!clientSearch) return clients;
+    const search = clientSearch.toLowerCase();
+    return clients.filter(
+      (client) =>
+        client.name.toLowerCase().includes(search) ||
+        client.phone.includes(search)
+    );
+  }, [clients, clientSearch]);
+
+  const handleSelectClient = (client: Client) => {
+    setFormData({
+      ...formData,
+      clientName: client.name,
+      clientPhone: client.phone,
+      clientId: client._id,
+    });
+    setClientPopoverOpen(false);
+    setClientSearch('');
+  };
+
+  const handleNewClient = () => {
+    setFormData({
+      ...formData,
+      clientName: clientSearch,
+      clientPhone: '',
+      clientId: undefined,
+    });
+    setClientPopoverOpen(false);
+  };
 
   // Calcula os slots disponíveis baseado na data selecionada
   const timeSlots = useMemo(() => {
@@ -79,9 +120,12 @@ export function AppointmentDialog({
 
   useEffect(() => {
     if (appointment) {
+      // Tenta encontrar o cliente pelo nome para obter o ID
+      const matchedClient = clients.find(c => c.name === appointment.clientName);
       setFormData({
         clientName: appointment.clientName,
         clientPhone: appointment.clientPhone || '',
+        clientId: matchedClient?._id,
         service: appointment.service,
         date: appointment.date,
         time: appointment.time,
@@ -92,6 +136,7 @@ export function AppointmentDialog({
       setFormData({
         clientName: '',
         clientPhone: '',
+        clientId: undefined,
         service: '',
         date: selectedDate,
         time: selectedTime || '',
@@ -99,7 +144,7 @@ export function AppointmentDialog({
         notes: '',
       });
     }
-  }, [appointment, selectedDate, selectedTime, open]);
+  }, [appointment, selectedDate, selectedTime, open, clients]);
 
   // Limpa o horário se a data mudar e o horário atual não estiver disponível
   useEffect(() => {
@@ -130,12 +175,69 @@ export function AppointmentDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="clientName">Nome do Cliente *</Label>
-            <Input
-              id="clientName"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-              required
-            />
+            <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={clientPopoverOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {formData.clientName || "Selecione ou digite um cliente..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[350px] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput
+                    placeholder="Buscar cliente..."
+                    value={clientSearch}
+                    onValueChange={setClientSearch}
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      <div className="py-2 text-center text-sm">
+                        <p className="text-muted-foreground mb-2">Nenhum cliente encontrado</p>
+                        {clientSearch && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2"
+                            onClick={handleNewClient}
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            Usar "{clientSearch}" como novo
+                          </Button>
+                        )}
+                      </div>
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {filteredClients.map((client) => (
+                        <CommandItem
+                          key={client._id}
+                          value={client._id}
+                          onSelect={() => handleSelectClient(client)}
+                          className="cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.clientId === client._id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex flex-col">
+                            <span>{client.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {client.phone} • {client.visits} visitas
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label htmlFor="clientPhone">Telefone</Label>

@@ -90,6 +90,24 @@ export function useAppointments(selectedDate?: string) {
     }
   };
 
+  // Incrementa as visitas do cliente
+  const incrementClientVisits = async (clientName: string) => {
+    try {
+      // Busca o cliente pelo nome
+      const clientsResponse = await api.getClients();
+      if (clientsResponse.success && clientsResponse.data) {
+        const client = clientsResponse.data.find((c: any) => c.name === clientName);
+        if (client) {
+          await api.updateClient(client._id, {
+            visits: (client.visits || 0) + 1,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error incrementing client visits:', error);
+    }
+  };
+
   const createAppointment = async (appointmentData: Omit<Appointment, '_id'>) => {
     try {
       const response = await api.createAppointment(appointmentData);
@@ -126,7 +144,7 @@ export function useAppointments(selectedDate?: string) {
       const response = await api.updateAppointment(id, appointmentData);
 
       if (response.success) {
-        // Se o agendamento foi marcado como concluído, cria a transação
+        // Se o agendamento foi marcado como concluído, cria a transação e incrementa visitas
         if (isBeingCompleted && currentAppointment) {
           const serviceName = appointmentData.service || currentAppointment.service;
           const price = await getServicePrice(serviceName);
@@ -143,6 +161,9 @@ export function useAppointments(selectedDate?: string) {
               variant: 'destructive',
             });
           }
+
+          // Incrementa as visitas do cliente
+          await incrementClientVisits(appointmentData.clientName || currentAppointment.clientName);
         }
 
         toast({
