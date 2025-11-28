@@ -6,7 +6,6 @@ import {
   Calendar, 
   DollarSign, 
   Settings, 
-  Scissors,
   Menu,
   X,
   LogOut
@@ -15,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.png';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
@@ -68,9 +68,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
           <div className="flex items-center gap-3 mb-10">
-            <div className="p-2 rounded-xl gold-gradient glow-gold">
-              <Scissors className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="Salão do Ratinho" className="h-14 w-14 object-contain" />
             <div>
               <h1 className="font-serif text-xl font-bold text-foreground">Salão do</h1>
               <p className="text-sm gold-text font-semibold -mt-1">Ratinho</p>
