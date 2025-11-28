@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Service {
@@ -20,14 +20,13 @@ export function useServices() {
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('mongodb-services', {
-        body: { action: 'list' },
-      });
+      const response = await api.getServices();
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setServices(data.data || []);
+      if (response.success) {
+        setServices(response.data || []);
+      } else {
+        throw new Error(response.error || 'Failed to fetch services');
+      }
     } catch (error) {
       console.error('Error fetching services:', error);
       toast({
@@ -46,20 +45,18 @@ export function useServices() {
 
   const createService = async (serviceData: Omit<Service, '_id'>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-services', {
-        body: { action: 'create', data: serviceData },
-      });
+      const response = await api.createService(serviceData);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Serviço criado com sucesso',
-      });
-
-      await fetchServices();
-      return data.data;
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Serviço criado com sucesso',
+        });
+        await fetchServices();
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to create service');
+      }
     } catch (error) {
       console.error('Error creating service:', error);
       toast({
@@ -73,20 +70,18 @@ export function useServices() {
 
   const updateService = async (id: string, serviceData: Partial<Service>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-services', {
-        body: { action: 'update', id, data: serviceData },
-      });
+      const response = await api.updateService(id, serviceData);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Serviço atualizado com sucesso',
-      });
-
-      await fetchServices();
-      return data.data;
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Serviço atualizado com sucesso',
+        });
+        await fetchServices();
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to update service');
+      }
     } catch (error) {
       console.error('Error updating service:', error);
       toast({
@@ -100,19 +95,17 @@ export function useServices() {
 
   const deleteService = async (id: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-services', {
-        body: { action: 'delete', id },
-      });
+      const response = await api.deleteService(id);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Serviço excluído com sucesso',
-      });
-
-      await fetchServices();
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Serviço excluído com sucesso',
+        });
+        await fetchServices();
+      } else {
+        throw new Error(response.error || 'Failed to delete service');
+      }
     } catch (error) {
       console.error('Error deleting service:', error);
       toast({

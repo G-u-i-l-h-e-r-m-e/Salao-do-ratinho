@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 export interface Client {
@@ -30,16 +30,12 @@ export function useClients() {
   const fetchClients = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('mongodb-clients', {
-        body: { action: 'list' }
-      });
+      const response = await api.getClients();
 
-      if (error) throw error;
-      
-      if (data?.success) {
-        setClients(data.data || []);
+      if (response.success) {
+        setClients(response.data || []);
       } else {
-        throw new Error(data?.error || 'Failed to fetch clients');
+        throw new Error(response.error || 'Failed to fetch clients');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao carregar clientes';
@@ -55,21 +51,17 @@ export function useClients() {
 
   const createClient = async (clientData: ClientInput) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-clients', {
-        body: { action: 'create', data: clientData }
-      });
+      const response = await api.createClient(clientData);
 
-      if (error) throw error;
-      
-      if (data?.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Cliente criado com sucesso!'
         });
         await fetchClients();
-        return data.data;
+        return response.data;
       } else {
-        throw new Error(data?.error || 'Failed to create client');
+        throw new Error(response.error || 'Failed to create client');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao criar cliente';
@@ -84,21 +76,17 @@ export function useClients() {
 
   const updateClient = async (id: string, clientData: Partial<ClientInput>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-clients', {
-        body: { action: 'update', id, data: clientData }
-      });
+      const response = await api.updateClient(id, clientData);
 
-      if (error) throw error;
-      
-      if (data?.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Cliente atualizado com sucesso!'
         });
         await fetchClients();
-        return data.data;
+        return response.data;
       } else {
-        throw new Error(data?.error || 'Failed to update client');
+        throw new Error(response.error || 'Failed to update client');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao atualizar cliente';
@@ -113,13 +101,9 @@ export function useClients() {
 
   const deleteClient = async (id: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-clients', {
-        body: { action: 'delete', id }
-      });
+      const response = await api.deleteClient(id);
 
-      if (error) throw error;
-      
-      if (data?.success) {
+      if (response.success) {
         toast({
           title: 'Sucesso',
           description: 'Cliente excluído com sucesso!'
@@ -127,7 +111,7 @@ export function useClients() {
         await fetchClients();
         return true;
       } else {
-        throw new Error(data?.error || 'Failed to delete client');
+        throw new Error(response.error || 'Failed to delete client');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Erro ao excluir cliente';

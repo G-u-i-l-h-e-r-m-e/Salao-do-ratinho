@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Appointment {
@@ -23,14 +23,13 @@ export function useAppointments(selectedDate?: string) {
   const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('mongodb-appointments', {
-        body: { action: 'list', date: selectedDate },
-      });
+      const response = await api.getAppointments(selectedDate);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      setAppointments(data.data || []);
+      if (response.success) {
+        setAppointments(response.data || []);
+      } else {
+        throw new Error(response.error || 'Failed to fetch appointments');
+      }
     } catch (error) {
       console.error('Error fetching appointments:', error);
       toast({
@@ -49,20 +48,18 @@ export function useAppointments(selectedDate?: string) {
 
   const createAppointment = async (appointmentData: Omit<Appointment, '_id'>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-appointments', {
-        body: { action: 'create', data: appointmentData },
-      });
+      const response = await api.createAppointment(appointmentData);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Agendamento criado com sucesso',
-      });
-
-      await fetchAppointments();
-      return data.data;
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Agendamento criado com sucesso',
+        });
+        await fetchAppointments();
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to create appointment');
+      }
     } catch (error) {
       console.error('Error creating appointment:', error);
       toast({
@@ -76,20 +73,18 @@ export function useAppointments(selectedDate?: string) {
 
   const updateAppointment = async (id: string, appointmentData: Partial<Appointment>) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-appointments', {
-        body: { action: 'update', id, data: appointmentData },
-      });
+      const response = await api.updateAppointment(id, appointmentData);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Agendamento atualizado com sucesso',
-      });
-
-      await fetchAppointments();
-      return data.data;
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Agendamento atualizado com sucesso',
+        });
+        await fetchAppointments();
+        return response.data;
+      } else {
+        throw new Error(response.error || 'Failed to update appointment');
+      }
     } catch (error) {
       console.error('Error updating appointment:', error);
       toast({
@@ -103,19 +98,17 @@ export function useAppointments(selectedDate?: string) {
 
   const deleteAppointment = async (id: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('mongodb-appointments', {
-        body: { action: 'delete', id },
-      });
+      const response = await api.deleteAppointment(id);
 
-      if (error) throw error;
-      if (data.error) throw new Error(data.error);
-
-      toast({
-        title: 'Sucesso',
-        description: 'Agendamento excluído com sucesso',
-      });
-
-      await fetchAppointments();
+      if (response.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Agendamento excluído com sucesso',
+        });
+        await fetchAppointments();
+      } else {
+        throw new Error(response.error || 'Failed to delete appointment');
+      }
     } catch (error) {
       console.error('Error deleting appointment:', error);
       toast({
