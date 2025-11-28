@@ -22,9 +22,8 @@ interface SalonInfo {
 }
 
 interface NotificationSettings {
-  newAppointments: boolean;
   appointmentReminder: boolean;
-  dailyReport: boolean;
+  reminderMinutes: number;
 }
 
 interface ConflictingAppointment {
@@ -42,9 +41,8 @@ const defaultSalonInfo: SalonInfo = {
 };
 
 const defaultNotifications: NotificationSettings = {
-  newAppointments: true,
   appointmentReminder: true,
-  dailyReport: false,
+  reminderMinutes: 10,
 };
 
 export function Configuracoes() {
@@ -180,6 +178,7 @@ export function Configuracoes() {
       // Salva as configurações
       localStorage.setItem('salonInfo', JSON.stringify(salonInfo));
       localStorage.setItem('notifications', JSON.stringify(notifications));
+      localStorage.setItem('appointmentReminderMinutes', notifications.reminderMinutes.toString());
       saveBusinessHours(localBusinessHours);
       
       toast({
@@ -550,35 +549,29 @@ export function Configuracoes() {
         </div>
         
         <div className="space-y-4">
-          <div className="flex items-center justify-between py-3 border-b border-border">
-            <div>
-              <p className="font-medium text-foreground">Notificar novos agendamentos</p>
-              <p className="text-sm text-muted-foreground">Receba alertas quando houver novos agendamentos</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-4">
+            <div className="flex items-center gap-3">
+              <Switch 
+                checked={notifications.appointmentReminder}
+                onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, appointmentReminder: checked }))}
+              />
+              <div>
+                <p className="font-medium text-foreground">Lembrete de próximo cliente</p>
+                <p className="text-sm text-muted-foreground">Popup avisando sobre o próximo agendamento</p>
+              </div>
             </div>
-            <Switch 
-              checked={notifications.newAppointments}
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, newAppointments: checked }))}
-            />
-          </div>
-          <div className="flex items-center justify-between py-3 border-b border-border">
-            <div>
-              <p className="font-medium text-foreground">Lembrete de agendamento</p>
-              <p className="text-sm text-muted-foreground">Enviar lembrete para clientes 1 hora antes</p>
+            <div className="flex items-center gap-2">
+              <Input 
+                type="number"
+                min={1}
+                max={60}
+                value={notifications.reminderMinutes}
+                onChange={(e) => setNotifications(prev => ({ ...prev, reminderMinutes: parseInt(e.target.value) || 10 }))}
+                className="w-20 bg-secondary border-border text-center"
+                disabled={!notifications.appointmentReminder}
+              />
+              <span className="text-sm text-muted-foreground">min antes</span>
             </div>
-            <Switch 
-              checked={notifications.appointmentReminder}
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, appointmentReminder: checked }))}
-            />
-          </div>
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium text-foreground">Relatório diário</p>
-              <p className="text-sm text-muted-foreground">Receber resumo do dia por email</p>
-            </div>
-            <Switch 
-              checked={notifications.dailyReport}
-              onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, dailyReport: checked }))}
-            />
           </div>
         </div>
       </div>
