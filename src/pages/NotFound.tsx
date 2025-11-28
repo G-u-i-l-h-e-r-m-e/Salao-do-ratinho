@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
@@ -7,6 +7,11 @@ const NotFound = () => {
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
+
+  // Redireciona /login para /auth
+  if (location.pathname === '/login') {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
