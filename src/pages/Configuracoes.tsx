@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle, Megaphone } from 'lucide-react';
+import { User, Bell, Shield, Clock, Save, Scissors, Plus, Edit, Trash2, Loader2, AlertTriangle, Megaphone, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useServices, Service } from '@/hooks/useServices';
 import { ServiceDialog } from '@/components/ServiceDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -476,13 +477,37 @@ export function Configuracoes() {
         <div className="space-y-4">
           <div>
             <label className="text-sm text-muted-foreground">Título da Promoção</label>
-            <Input 
-              value={promotionTitle}
-              onChange={(e) => setPromotionTitle(e.target.value)}
-              placeholder="🎉 Promoção Especial!"
-              className="mt-1.5 bg-secondary border-border"
-              disabled={!promotionActive}
-            />
+            <div className="flex gap-2 mt-1.5">
+              <Input 
+                value={promotionTitle}
+                onChange={(e) => setPromotionTitle(e.target.value)}
+                placeholder="🎉 Promoção Especial!"
+                className="bg-secondary border-border"
+                disabled={!promotionActive}
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="icon" disabled={!promotionActive}>
+                    <Smile className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-2" align="end">
+                  <div className="grid grid-cols-6 gap-1">
+                    {['🎉', '🔥', '⭐', '💈', '✨', '💇', '🎁', '💰', '🏆', '❤️', '👑', '💎', '🌟', '🎊', '🤩', '💪', '👏', '🙌'].map((emoji) => (
+                      <Button
+                        key={emoji}
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-lg"
+                        onClick={() => setPromotionTitle(prev => prev + emoji)}
+                      >
+                        {emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <div>
             <label className="text-sm text-muted-foreground">Mensagem</label>
