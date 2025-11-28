@@ -48,7 +48,6 @@ src/
 ├── hooks/              # Custom hooks React
 ├── pages/              # Páginas/rotas da aplicação
 ├── lib/                # Utilitários e configurações
-├── integrations/       # Integrações externas (Supabase)
 └── assets/             # Arquivos estáticos
 
 api-externa/            # API REST externa
@@ -153,14 +152,11 @@ O projeto utiliza um design system customizado com:
 - Histórico de serviços
 - Informações do salão
 
-## 🚀 Deploy
+## 🚀 Deploy (Render)
 
 
-### API Externa (Vercel)
-```bash
-cd api-externa
-vercel deploy --prod
-```
+### API Externa (Render)
+
 
 ## 📄 Licença
 
