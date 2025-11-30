@@ -14,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { useBusinessHours, BusinessHours, DayHours } from '@/hooks/useBusinessHours';
 import { useSalonInfo } from '@/hooks/useSalonInfo';
 import { api } from '@/lib/api';
